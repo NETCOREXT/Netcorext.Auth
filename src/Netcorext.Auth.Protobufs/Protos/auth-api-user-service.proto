@@ -101,6 +101,7 @@ message GetUserRequest {
     google.protobuf.Int64Value roleId = 1;
     google.protobuf.StringValue name = 2;
     google.protobuf.Timestamp expireDate = 3;
+    google.protobuf.StringValue displayName = 4;
   }
 
   message UserExtendData {
@@ -159,6 +160,7 @@ message GetUserRequest {
       int64 creatorId = 6;
       google.protobuf.Timestamp modificationDate = 7;
       int64 modifierId = 8;
+      google.protobuf.StringValue displayName = 9;
     }
 
     message UserExtendData {
