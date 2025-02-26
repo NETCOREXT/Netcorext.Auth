@@ -116,6 +116,7 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                        {
                                            Id = t.RoleId,
                                            Name = t.Role.Name,
+                                           DisplayName = t.Role.DisplayName,
                                            Priority = t.Role.Priority,
                                            ExpireDate = t.ExpireDate
                                        })
@@ -270,6 +271,7 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                      {
                                          Id = t.RoleId,
                                          Name = t.Role.Name,
+                                         DisplayName = t.Role.DisplayName,
                                          Priority = t.Role.Priority,
                                          ExpireDate = t.ExpireDate
                                      })
@@ -583,6 +585,7 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                        {
                                            Id = t.RoleId,
                                            Name = t.Role.Name,
+                                           DisplayName = t.Role.DisplayName,
                                            Priority = t.Role.Priority,
                                            ExpireDate = t.ExpireDate
                                        })
@@ -615,6 +618,7 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                        {
                                            Id = t.RoleId,
                                            Name = t.Role.Name,
+                                           DisplayName = t.Role.DisplayName,
                                            Priority = t.Role.Priority,
                                            ExpireDate = t.ExpireDate
                                        })

@@ -52,6 +52,7 @@ public class GetUserHandler : IRequestHandler<GetUser, Result<IEnumerable<Models
 
             if (request.Role.RoleId.HasValue) predicateRole = predicateRole.And(p => p.RoleId == request.Role.RoleId);
             if (!request.Role.Name.IsEmpty()) predicateRole = predicateRole.And(p => p.Role.Name.ToUpper().Contains(request.Role.Name.ToUpper()));
+            if (!request.Role.DisplayName.IsEmpty()) predicateRole = predicateRole.And(p => p.Role.DisplayName != null && p.Role.DisplayName.ToUpper().Contains(request.Role.DisplayName.ToUpper()));
             if (request.Role.ExpireDate.HasValue) predicateRole = predicateRole.And(p => p.ExpireDate == request.Role.ExpireDate);
 
             predicate = predicate.And(t => t.Roles.AsQueryable().Any(predicateRole));
@@ -132,6 +133,7 @@ public class GetUserHandler : IRequestHandler<GetUser, Result<IEnumerable<Models
                                                                                                                {
                                                                                                                    RoleId = t3.RoleId,
                                                                                                                    Name = t3.Role.Name,
+                                                                                                                   DisplayName = t3.Role.DisplayName,
                                                                                                                    Priority = t3.Role.Priority,
                                                                                                                    ExpireDate = t3.ExpireDate,
                                                                                                                    CreationDate = t3.CreationDate,

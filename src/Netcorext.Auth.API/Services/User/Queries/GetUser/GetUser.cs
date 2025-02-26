@@ -24,6 +24,7 @@ public class GetUser : IRequest<Result<IEnumerable<Models.User>>>
     {
         public long? RoleId { get; set; }
         public string? Name { get; set; }
+        public string? DisplayName { get; set; }
         public DateTimeOffset? ExpireDate { get; set; }
     }
 

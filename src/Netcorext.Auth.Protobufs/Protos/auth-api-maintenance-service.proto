@@ -1,0 +1,62 @@
+syntax = "proto3";
+package netcorext.auth.api;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Netcorext.Contracts.Protobufs/Result/paging.proto";
+
+service MaintenanceService {
+  rpc CreateMaintain (CreateMaintainRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc UpdateMaintain (UpdateMaintainRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc DeleteMaintain (DeleteMaintainRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc GetMaintain (GetMaintainRequest) returns (GetMaintainRequest.Result);
+}
+
+message CreateMaintainRequest {
+  map<string, MaintainItem> items = 1;
+
+  message MaintainItem {
+    google.protobuf.Timestamp beginDate = 1;
+    google.protobuf.Timestamp endDate = 2;
+    google.protobuf.StringValue message = 3;
+    repeated google.protobuf.StringValue excludeHosts = 4;
+    repeated google.protobuf.Int64Value excludeRoles = 5;
+  }
+}
+
+message UpdateMaintainRequest {
+  map<string, MaintainItem> items = 1;
+
+  message MaintainItem {
+    google.protobuf.Timestamp beginDate = 1;
+    google.protobuf.Timestamp endDate = 2;
+    google.protobuf.StringValue message = 3;
+    repeated google.protobuf.StringValue excludeHosts = 4;
+    repeated google.protobuf.Int64Value excludeRoles = 5;
+  }
+}
+
+message DeleteMaintainRequest {
+  repeated string keys = 1;
+}
+
+message GetMaintainRequest {
+  netcorext.contracts.protobufs.Paging paging = 1;
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    netcorext.contracts.protobufs.Paging paging = 3;
+    map<string, MaintainItem> content = 4;
+
+    message MaintainItem {
+      google.protobuf.Timestamp beginDate = 1;
+      google.protobuf.Timestamp endDate = 2;
+      google.protobuf.StringValue message = 3;
+      repeated google.protobuf.StringValue excludeHosts = 4;
+      repeated google.protobuf.Int64Value excludeRoles = 5;
+    }
+  }
+}

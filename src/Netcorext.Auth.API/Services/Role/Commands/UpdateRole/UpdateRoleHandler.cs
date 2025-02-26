@@ -62,6 +62,7 @@ public class UpdateRoleHandler : IRequestHandler<UpdateRole, Result>
                 return Result.Conflict;
 
         _context.Entry(entity).UpdateProperty(t => t.Name, request.Name);
+        _context.Entry(entity).UpdateProperty(t => t.DisplayName, request.DisplayName, false);
         _context.Entry(entity).UpdateProperty(t => t.Priority, request.Priority);
         _context.Entry(entity).UpdateProperty(t => t.Disabled, request.Disabled);
 

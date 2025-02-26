@@ -1,0 +1,31 @@
+syntax = "proto3";
+package netcorext.auth.authentication;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Enums/permission-type.proto";
+
+service PermissionValidationService {
+  rpc ValidatePermission (ValidatePermissionRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message ValidatePermissionRequest {
+  google.protobuf.Int64Value userId = 1;
+  repeated google.protobuf.Int64Value roleId = 2;
+  string functionId = 3;
+  google.protobuf.StringValue group = 4;
+  netcorext.auth.protobufs.enums.PermissionType permissionType = 5;
+  repeated PermissionCondition permissionConditions = 6;
+  repeated ExtendData roleExtendData = 7;
+  
+  message PermissionCondition {
+    string key = 1;
+    string value = 2;
+  }
+
+  message ExtendData {
+    string key = 1;
+    string value = 2;
+  }
+}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+package netcorext.contracts.protobufs;
+option csharp_namespace = "Netcorext.Contracts.Protobufs";
+
+import "google/protobuf/struct.proto";
+import "Netcorext.Contracts.Protobufs/Result/paging.proto";
+
+message Result {
+  string code = 1;
+  string message = 2;
+  repeated ValidationFailure errors = 3;
+  google.protobuf.Value content = 4;
+  netcorext.contracts.protobufs.Paging paging = 5;
+  
+  enum Severity {
+    Error = 0;
+    Warning = 1;
+    Info = 2;
+  }
+  
+  message ValidationFailure {
+    string propertyName = 1;
+    string errorMessage = 2;
+    google.protobuf.Value AttemptedValue = 3;
+    google.protobuf.Value CustomState = 4;
+    Severity severity = 5;
+    string ErrorCode = 6;
+    map<string, google.protobuf.Value> formattedMessagePlaceholderValues = 7;
+  }
+}

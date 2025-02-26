@@ -5,6 +5,7 @@ public class FullUserRole
     public long Id { get; set; }
     public long RoleId { get; set; }
     public string Name { get; set; } = null!;
+    public string? DisplayName { get; set; }
     public int Priority { get; set; }
     public DateTimeOffset? ExpireDate { get; set; }
     public IEnumerable<RoleExtendData>? ExtendData { get; set; }

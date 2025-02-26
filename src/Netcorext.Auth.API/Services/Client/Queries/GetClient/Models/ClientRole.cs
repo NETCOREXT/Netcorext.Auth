@@ -4,6 +4,7 @@ public class ClientRole
 {
     public long RoleId { get; set; }
     public string Name { get; set; } = null!;
+    public string? DisplayName { get; set; }
     public DateTimeOffset? ExpireDate { get; set; }
     public DateTimeOffset CreationDate { get; set; }
     public long CreatorId { get; set; }

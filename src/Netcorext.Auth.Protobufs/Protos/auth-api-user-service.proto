@@ -1,0 +1,351 @@
+syntax = "proto3";
+package netcorext.auth.api;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Netcorext.Contracts.Protobufs/Result/paging.proto";
+import "Enums/permission-type.proto";
+import "Enums/operation-mode.proto";
+
+service UserService {
+  rpc CreateUser (CreateUserRequest) returns (CreateUserRequest.Result);
+  rpc DeleteUser (DeleteUserRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc ExistsUser (ExistsUserRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc GetUser (GetUserRequest) returns (GetUserRequest.Result);
+  rpc GetUserIdentity (GetUserIdentityRequest) returns (GetUserIdentityRequest.Result);
+  rpc GetUserFunction (GetUserFunctionRequest) returns (GetUserFunctionRequest.Result);
+  rpc GetUserRole (GetUserRoleRequest) returns (GetUserRoleRequest.Result);
+  rpc UpdateUser (UpdateUserRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message CreateUserRequest {
+  string username = 1;
+  google.protobuf.StringValue displayName = 2;
+  google.protobuf.StringValue password = 3;
+  google.protobuf.StringValue email = 4;
+  google.protobuf.StringValue phoneNumber = 5;
+  bool twoFactorEnabled = 6;
+  bool requiredChangePassword = 7;
+  bool allowedRefreshToken = 8;
+  google.protobuf.Int32Value tokenExpireSeconds = 9;
+  google.protobuf.Int32Value refreshTokenExpireSeconds = 10;
+  google.protobuf.Int32Value codeExpireSeconds = 11;
+  repeated UserRole roles = 12;
+  repeated UserExtendData extendData = 13;
+  repeated UserExternalLogin externalLogins = 14;
+  repeated UserPermissionCondition permissionConditions = 15;
+  google.protobuf.Int64Value customId = 16;
+  google.protobuf.BoolValue emailConfirmed = 17;
+  google.protobuf.BoolValue phoneNumberConfirmed = 18;
+  google.protobuf.BoolValue verified = 19;
+  google.protobuf.BoolValue disabled = 20;
+
+  message UserRole {
+    int64 roleId = 1;
+    google.protobuf.Timestamp expireDate = 2;
+  }
+
+  message UserExtendData {
+    string key = 1;
+    string value = 2;
+  }
+
+  message UserExternalLogin {
+    string provider = 1;
+    string uniqueId = 2;
+  }
+
+  message UserPermissionCondition {
+    int64 permissionId = 1;
+    google.protobuf.StringValue group = 2;
+    string key = 3;
+    string value = 4;
+    google.protobuf.Timestamp expireDate = 5;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    google.protobuf.Int64Value content = 3;
+  }
+}
+
+message DeleteUserRequest {
+  int64 id = 1;
+}
+
+message ExistsUserRequest {
+  google.protobuf.Int64Value id = 1;
+  string username = 2;
+}
+
+message GetUserRequest {
+  netcorext.contracts.protobufs.Paging paging = 1;
+  repeated int64 ids = 2;
+  google.protobuf.StringValue username = 3;
+  google.protobuf.StringValue displayName = 4;
+  google.protobuf.StringValue email = 5;
+  google.protobuf.BoolValue emailConfirmed = 6;
+  google.protobuf.StringValue phoneNumber = 7;
+  google.protobuf.BoolValue phoneNumberConfirmed = 8;
+  google.protobuf.BoolValue disabled = 9;
+  UserRole role = 10;
+  repeated UserExtendData extendData = 11;
+  UserExternalLogin externalLogin = 12;
+  repeated google.protobuf.StringValue lastSignInIps = 13;
+  google.protobuf.BoolValue verified = 14;
+
+  message UserRole {
+    google.protobuf.Int64Value roleId = 1;
+    google.protobuf.StringValue name = 2;
+    google.protobuf.Timestamp expireDate = 3;
+  }
+
+  message UserExtendData {
+    string key = 1;
+    string value = 2;
+  }
+
+  message UserExternalLogin {
+    google.protobuf.StringValue provider = 1;
+    google.protobuf.StringValue uniqueId = 2;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    netcorext.contracts.protobufs.Paging paging = 3;
+    repeated User content = 4;
+
+    message User {
+      int64 id = 1;
+      string username = 2;
+      string displayName = 3;
+      bool hasPassword = 4;
+      google.protobuf.StringValue email = 5;
+      bool emailConfirmed = 6;
+      google.protobuf.StringValue phoneNumber = 7;
+      bool phoneNumberConfirmed = 8;
+      google.protobuf.StringValue otp = 9;
+      bool otpBound = 10;
+      bool twoFactorEnabled = 11;
+      bool requiredChangePassword = 12;
+      bool allowedRefreshToken = 13;
+      google.protobuf.Int32Value tokenExpireSeconds = 14;
+      google.protobuf.Int32Value refreshTokenExpireSeconds = 15;
+      google.protobuf.Int32Value codeExpireSeconds = 16;
+      google.protobuf.Timestamp lastSignInDate = 17;
+      google.protobuf.StringValue lastSignInIp = 18;
+      bool disabled = 19;
+      google.protobuf.Timestamp creationDate = 20;
+      int64 creatorId = 21;
+      google.protobuf.Timestamp modificationDate = 22;
+      int64 modifierId = 23;
+      repeated UserRole roles = 24;
+      repeated UserExtendData extendData = 25;
+      repeated UserExternalLogin externalLogins = 26;
+      repeated UserPermissionCondition permissionConditions  = 27;
+      bool verified = 28;
+    }
+
+    message UserRole {
+      int64 roleId = 1;
+      string name = 2;
+      int32 priority = 3;
+      google.protobuf.Timestamp expireDate = 4;
+      google.protobuf.Timestamp creationDate = 5;
+      int64 creatorId = 6;
+      google.protobuf.Timestamp modificationDate = 7;
+      int64 modifierId = 8;
+    }
+
+    message UserExtendData {
+      string key = 1;
+      string value = 2;
+      google.protobuf.Timestamp creationDate = 3;
+      int64 creatorId = 4;
+      google.protobuf.Timestamp modificationDate = 5;
+      int64 modifierId = 6;
+    }
+
+    message UserExternalLogin {
+      string provider = 1;
+      string uniqueId = 2;
+      google.protobuf.Timestamp creationDate = 3;
+      int64 creatorId = 4;
+      google.protobuf.Timestamp modificationDate = 5;
+      int64 modifierId = 6;
+    }
+
+    message UserPermissionCondition {
+      int64 id = 1;
+      int64 permissionId = 2;
+      google.protobuf.StringValue group = 3;
+      string key = 4;
+      string value = 5;
+      google.protobuf.Timestamp expireDate = 6;
+      google.protobuf.Timestamp creationDate = 7;
+      int64 creatorId = 8;
+      google.protobuf.Timestamp modificationDate = 9;
+      int64 modifierId = 10;
+    }
+  }
+}
+
+message GetUserIdentityRequest {
+  repeated int64 ids = 1;
+  repeated string usernames = 2;
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    repeated UserIdentity content = 3;
+
+    message UserIdentity {
+      int64 id = 1;
+      string username = 2;
+      string displayName = 3;
+    }
+  }
+}
+
+message GetUserFunctionRequest {
+  int64 id = 1;
+  repeated PermissionCondition permissionConditions = 2;
+
+  message PermissionCondition {
+    google.protobuf.StringValue group = 1;
+    repeated Condition conditions = 2;
+  }
+
+  message Condition {
+    string key = 1;
+    string value = 2;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    repeated UserFunction content = 3;
+
+    message UserFunction {
+      repeated Function functions = 1;
+    }
+
+    message Function {
+      string id = 1;
+      netcorext.auth.protobufs.enums.PermissionType permissionType = 2;
+    }
+  }
+}
+
+message GetUserRoleRequest {
+  repeated int64 ids = 1;
+  bool includeExtendData = 2;
+  bool includePermission = 3;
+  bool includePermissionCondition = 4;
+  bool includeExpired = 5;
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    repeated UserRole content = 4;
+
+    message UserRole {
+      int64 id = 1;
+      int64 roleId = 2;
+      string name = 3;
+      int32 priority = 4;
+      google.protobuf.Timestamp expireDate = 5;
+      repeated RoleExtendData extendData = 6;
+      repeated RolePermission permissions = 7;
+      repeated RolePermissionCondition permissionConditions = 8;
+      google.protobuf.Timestamp creationDate = 9;
+      int64 creatorId = 10;
+      google.protobuf.Timestamp modificationDate = 11;
+      int64 modifierId = 12;
+    }
+
+    message RoleExtendData {
+      string key = 1;
+      string value = 2;
+      google.protobuf.Timestamp creationDate = 3;
+      int64 creatorId = 4;
+      google.protobuf.Timestamp modificationDate = 5;
+      int64 modifierId = 6;
+    }
+
+    message RolePermission {
+      int64 roleId = 1;
+      int64 permissionId = 2;
+      string name = 3;
+      google.protobuf.Timestamp creationDate = 4;
+      int64 creatorId = 5;
+      google.protobuf.Timestamp modificationDate = 6;
+      int64 modifierId = 7;
+    }
+
+    message RolePermissionCondition {
+      int64 id = 1;
+      int64 permissionId = 2;
+      google.protobuf.StringValue group = 3;
+      string key = 4;
+      string value = 5;
+      google.protobuf.Timestamp creationDate = 6;
+      int64 creatorId = 7;
+      google.protobuf.Timestamp modificationDate = 8;
+      int64 modifierId = 9;
+    }
+  }
+}
+
+message UpdateUserRequest {
+  int64 id = 1;
+  google.protobuf.StringValue username = 2;
+  google.protobuf.StringValue displayName = 3;
+  google.protobuf.StringValue password = 4;
+  google.protobuf.StringValue email = 5;
+  google.protobuf.StringValue phoneNumber = 6;
+  google.protobuf.BoolValue twoFactorEnabled = 7;
+  google.protobuf.BoolValue requiredChangePassword = 8;
+  google.protobuf.BoolValue allowedRefreshToken = 9;
+  google.protobuf.Int32Value tokenExpireSeconds = 10;
+  google.protobuf.Int32Value refreshTokenExpireSeconds = 11;
+  google.protobuf.Int32Value codeExpireSeconds = 12;
+  google.protobuf.BoolValue disabled = 13;
+  repeated UserRole roles = 14;
+  repeated UserExtendData extendData = 15;
+  repeated UserExternalLogin externalLogins = 16;
+  repeated UserPermissionCondition permissionConditions = 17;
+  google.protobuf.BoolValue verified = 18;
+
+  message UserRole {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    int64 roleId = 2;
+    google.protobuf.Timestamp expireDate = 3;
+  }
+
+  message UserExtendData {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    string key = 2;
+    string value = 3;
+  }
+
+  message UserExternalLogin {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    string provider = 2;
+    string uniqueId = 3;
+  }
+
+  message UserPermissionCondition {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    google.protobuf.Int64Value id = 2;
+    int64 permissionId = 3;
+    google.protobuf.StringValue group = 4;
+    string key = 5;
+    string value = 6;
+    google.protobuf.Timestamp expireDate = 7;
+  }
+}

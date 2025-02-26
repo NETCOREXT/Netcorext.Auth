@@ -1,0 +1,117 @@
+syntax = "proto3";
+package netcorext.auth.api;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Netcorext.Contracts.Protobufs/Result/paging.proto";
+import "Enums/permission-type.proto";
+import "Enums/operation-mode.proto";
+
+
+service PermissionService {
+  rpc CreatePermission (CreatePermissionRequest) returns (CreatePermissionRequest.Result);
+  rpc DeletePermission (DeletePermissionRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc GetPermission (GetPermissionRequest) returns (GetPermissionRequest.Result);
+  rpc GetRouteFunction (google.protobuf.Empty) returns (GetRouteFunctionResult);
+  rpc UpdatePermission (UpdatePermissionRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message CreatePermissionRequest {
+  repeated Permission permissions = 1;
+
+  message Permission {
+    string name = 1;
+    int32 priority = 2;
+    bool disabled = 3;
+    google.protobuf.StringValue state = 4;
+    repeated Rule rules = 5;
+  }
+
+  message Rule {
+    string functionId = 1;
+    netcorext.auth.protobufs.enums.PermissionType permissionType = 2;
+    bool allowed = 3;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    repeated int64 content = 3;
+  }
+}
+
+message DeletePermissionRequest {
+  repeated int64 ids = 1;
+}
+
+message UpdatePermissionRequest {
+  int64 id = 1;
+  google.protobuf.StringValue name = 2;
+  google.protobuf.Int32Value priority = 3;
+  google.protobuf.BoolValue disabled = 4;
+  google.protobuf.StringValue state = 5;
+  repeated Rule rules = 6;
+
+  message Rule {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    google.protobuf.Int64Value id = 2;
+    string functionId = 3;
+    netcorext.auth.protobufs.enums.PermissionType permissionType = 4;
+    bool allowed = 5;
+  }
+}
+
+message GetPermissionRequest {
+  netcorext.contracts.protobufs.Paging paging = 1;
+  repeated int64 ids = 2;
+  google.protobuf.StringValue name = 3;
+  google.protobuf.BoolValue disabled = 4;
+  repeated string states = 5;
+  PermissionRule rule = 6;
+
+  message PermissionRule {
+    google.protobuf.StringValue functionId = 1;
+    repeated netcorext.auth.protobufs.enums.PermissionType permissionTypes = 2;
+    google.protobuf.BoolValue allowed = 3;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    netcorext.contracts.protobufs.Paging paging = 3;
+    repeated Permission content = 4;
+
+    message Permission {
+      int64 id = 1;
+      string name = 2;
+      int32 priority = 3;
+      bool disabled = 4;
+      repeated Rule rules = 5;
+      google.protobuf.Timestamp creationDate = 6;
+      int64 creatorId = 7;
+      google.protobuf.Timestamp modificationDate = 8;
+      int64 modifierId = 9;
+      google.protobuf.StringValue state = 10;
+    }
+
+    message Rule {
+      int64 id = 1;
+      string functionId = 2;
+      netcorext.auth.protobufs.enums.PermissionType permissionType = 3;
+      bool allowed = 4;
+      google.protobuf.Timestamp creationDate = 5;
+      int64 creatorId = 6;
+      google.protobuf.Timestamp modificationDate = 7;
+      int64 modifierId = 8;
+    }
+  }
+}
+
+message GetRouteFunctionResult {
+  string code = 1;
+  string message = 2;
+  repeated string content = 3;
+}

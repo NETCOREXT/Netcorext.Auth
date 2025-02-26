@@ -42,6 +42,7 @@ public class GetClientHandler : IRequestHandler<GetClient, Result<IEnumerable<Mo
 
             if (request.Role.RoleId.HasValue) predicateRole = predicateRole.And(p => p.RoleId == request.Role.RoleId);
             if (!request.Role.Name.IsEmpty()) predicateRole = predicateRole.And(p => p.Role.Name.Contains(request.Role.Name));
+            if (!request.Role.DisplayName.IsEmpty()) predicateRole = predicateRole.And(p => p.Role.DisplayName != null && p.Role.DisplayName.Contains(request.Role.DisplayName));
             if (request.Role.ExpireDate.HasValue) predicateRole = predicateRole.And(p => p.ExpireDate == request.Role.ExpireDate);
 
             predicate = predicate.And(t => t.Roles.AsQueryable().Any(predicateRole.Compile()));
@@ -93,6 +94,7 @@ public class GetClientHandler : IRequestHandler<GetClient, Result<IEnumerable<Mo
                                                                                                                      {
                                                                                                                          RoleId = t2.RoleId,
                                                                                                                          Name = t2.Role.Name,
+                                                                                                                         DisplayName = t2.Role.DisplayName,
                                                                                                                          ExpireDate = t2.ExpireDate,
                                                                                                                          CreationDate = t2.CreationDate,
                                                                                                                          CreatorId = t2.CreatorId,

@@ -1,0 +1,43 @@
+syntax = "proto3";
+package netcorext.auth.gateway;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/duration.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Enums/permission-type.proto";
+
+service RouteService {
+  rpc RegisterRoute (RegisterRouteRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message RegisterRouteRequest {
+  repeated RouteGroup groups = 1;
+
+  message RouteGroup {
+    string name = 1;
+    string baseUrl = 2;
+    google.protobuf.StringValue forwarderRequestVersion = 3;
+    google.protobuf.Int32Value forwarderHttpVersionPolicy = 4;
+    google.protobuf.Duration forwarderActivityTimeout = 5;
+    google.protobuf.BoolValue forwarderAllowResponseBuffering = 6;
+    repeated Route routes = 7;
+  }
+
+  message Route {
+    string protocol = 1;
+    string httpMethod = 2;
+    string relativePath = 3;
+    google.protobuf.StringValue template = 4;
+    string functionId = 5;
+    netcorext.auth.protobufs.enums.PermissionType nativePermission = 6;
+    bool allowAnonymous = 7;
+    google.protobuf.StringValue tag = 8;
+    repeated RouteValue routeValues = 9;
+  }
+
+  message RouteValue {
+    string key = 1;
+    string value = 2;
+  }
+}

@@ -1,0 +1,141 @@
+syntax = "proto3";
+package netcorext.auth.api;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Netcorext.Contracts.Protobufs/Result/paging.proto";
+import "Enums/operation-mode.proto";
+
+service ClientService {
+  rpc CreateClient (CreateClientRequest) returns (CreateClientRequest.Result);
+  rpc DeleteClient (DeleteClientRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc GetClient (GetClientRequest) returns (GetClientRequest.Result);
+  rpc UpdateClient (UpdateClientRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message CreateClientRequest {
+  string secret = 1;
+  string name = 2;
+  google.protobuf.StringValue callbackUrl = 3;
+  bool allowedRefreshToken = 4;
+  google.protobuf.Int32Value tokenExpireSeconds = 5;
+  google.protobuf.Int32Value refreshTokenExpireSeconds = 6;
+  google.protobuf.Int32Value codeExpireSeconds = 7;
+  bool disabled = 8;
+  repeated ClientRole roles = 9;
+  repeated ClientExtendData extendData = 10;
+
+  message ClientRole {
+    int64 roleId = 1;
+    google.protobuf.Timestamp expireDate = 2;
+  }
+
+  message ClientExtendData {
+    string key = 1;
+    string value = 2;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    google.protobuf.Int64Value content = 3;
+  }
+}
+
+message DeleteClientRequest {
+  int64 id = 1;
+}
+
+message GetClientRequest {
+  netcorext.contracts.protobufs.Paging paging = 1;
+  google.protobuf.Int64Value id = 2;
+  google.protobuf.StringValue name = 3;
+  google.protobuf.StringValue callbackUrl = 4;
+  google.protobuf.BoolValue disabled = 5;
+  ClientRole role = 6;
+  repeated ClientExtendData extendData = 7;
+
+  message ClientRole {
+    google.protobuf.Int64Value roleId = 1;
+    google.protobuf.StringValue name = 2;
+    google.protobuf.Timestamp expireDate = 3;
+    google.protobuf.StringValue displayName = 4;
+  }
+
+  message ClientExtendData {
+    string key = 1;
+    string value = 2;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    netcorext.contracts.protobufs.Paging paging = 3;
+    repeated Client content = 4;
+
+    message Client {
+      int64 id = 1;
+      string name = 2;
+      google.protobuf.StringValue callbackUrl = 3;
+      bool allowedRefreshToken = 4;
+      google.protobuf.Int32Value tokenExpireSeconds = 5;
+      google.protobuf.Int32Value refreshTokenExpireSeconds = 6;
+      google.protobuf.Int32Value codeExpireSeconds = 7;
+      bool disabled = 8;
+      google.protobuf.Timestamp creationDate = 9;
+      int64 creatorId = 10;
+      google.protobuf.Timestamp modificationDate = 11;
+      int64 modifierId = 12;
+      repeated ClientRole roles = 13;
+      repeated ClientExtendData extendData = 14;
+    }
+
+    message ClientRole {
+      int64 roleId = 1;
+      string name = 2;
+      google.protobuf.Timestamp expireDate = 3;
+      google.protobuf.Timestamp creationDate = 4;
+      int64 creatorId = 5;
+      google.protobuf.Timestamp modificationDate = 6;
+      int64 modifierId = 7;
+      google.protobuf.StringValue displayName = 8;
+    }
+
+    message ClientExtendData {
+      string key = 1;
+      string value = 2;
+      google.protobuf.Timestamp creationDate = 3;
+      int64 creatorId = 4;
+      google.protobuf.Timestamp modificationDate = 5;
+      int64 modifierId = 6;
+    }
+  }
+}
+
+message UpdateClientRequest {
+  int64 id = 1;
+  google.protobuf.StringValue secret = 2;
+  google.protobuf.StringValue name = 3;
+  google.protobuf.StringValue callbackUrl = 4;
+  google.protobuf.BoolValue allowedRefreshToken = 5;
+  google.protobuf.Int32Value tokenExpireSeconds = 6;
+  google.protobuf.Int32Value refreshTokenExpireSeconds = 7;
+  google.protobuf.Int32Value codeExpireSeconds = 8;
+  google.protobuf.BoolValue disabled = 9;
+  repeated ClientRole roles = 10;
+  repeated ClientExtendData extendData = 11;
+
+  message ClientRole {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    int64 roleId = 2;
+    google.protobuf.Timestamp expireDate = 3;
+  }
+
+  message ClientExtendData {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    string key = 2;
+    string value = 3;
+  }
+}

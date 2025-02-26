@@ -115,6 +115,7 @@ public class SignInHandler : IRequestHandler<SignIn, Result<TokenResult>>
                                        {
                                            Id = t.RoleId,
                                            Name = t.Role.Name,
+                                           DisplayName = t.Role.DisplayName,
                                            Priority = t.Role.Priority,
                                            ExpireDate = t.ExpireDate
                                        })

@@ -1,0 +1,11 @@
+syntax = "proto3";
+package netcorext.contracts.protobufs;
+option csharp_namespace = "Netcorext.Contracts.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+
+message Paging {
+  int32 offset = 1;
+  int32 limit = 2;
+  google.protobuf.Int32Value count = 3;
+}

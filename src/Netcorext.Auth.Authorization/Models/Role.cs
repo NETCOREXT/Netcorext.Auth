@@ -4,6 +4,7 @@ public class Role
 {
     public long Id { get; set; }
     public string Name { get; set; } = default!;
+    public string? DisplayName { get; set; }
     public int Priority { get; set; }
     public DateTimeOffset? ExpireDate { get; set; }
 }

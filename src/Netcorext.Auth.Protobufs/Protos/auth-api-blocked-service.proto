@@ -1,0 +1,77 @@
+syntax = "proto3";
+package netcorext.auth.api;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Netcorext.Contracts.Protobufs/Result/paging.proto";
+
+service BlockedService {
+  rpc CreateBlockedIp (CreateBlockedIpRequest) returns (CreateBlockedIpRequest.Result);
+  rpc DeleteBlockedIp (DeleteBlockedIpRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc GetBlockedIp (GetBlockedIpRequest) returns (GetBlockedIpRequest.Result);
+  rpc UpdateBlockedIp (UpdateBlockedIpRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message CreateBlockedIpRequest {
+  repeated BlockedIp blockedIps = 1;
+
+  message BlockedIp {
+    string cidr = 1;
+    google.protobuf.StringValue country = 2;
+    google.protobuf.StringValue city = 3;
+    google.protobuf.StringValue asn = 4;
+    google.protobuf.StringValue description = 5;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    repeated int64 content = 3;
+  }
+}
+
+message DeleteBlockedIpRequest {
+  repeated int64 ids = 1;
+}
+
+message UpdateBlockedIpRequest {
+  int64 id = 1;
+  google.protobuf.StringValue cidr = 2;
+  google.protobuf.StringValue country = 3;
+  google.protobuf.StringValue city = 4;
+  google.protobuf.StringValue asn = 5;
+  google.protobuf.StringValue description = 6;
+}
+
+message GetBlockedIpRequest {
+  netcorext.contracts.protobufs.Paging paging = 1;
+  google.protobuf.Int64Value id = 2;
+  google.protobuf.StringValue cidr = 3;
+  google.protobuf.StringValue Country = 4;
+  google.protobuf.StringValue city = 5;
+  google.protobuf.StringValue asn = 6;
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    netcorext.contracts.protobufs.Paging paging = 3;
+    repeated BlockedIp content = 4;
+
+    message BlockedIp {
+      int64 id = 1;
+      string cidr = 2;
+      int64 beginRange = 3;
+      int64 endRange = 4;
+      google.protobuf.StringValue country = 5;
+      google.protobuf.StringValue city = 6;
+      google.protobuf.StringValue asn = 7;
+      google.protobuf.StringValue description = 8;
+      google.protobuf.Timestamp creationDate = 9;
+      int64 creatorId = 10;
+      google.protobuf.Timestamp modificationDate = 11;
+      int64 modifierId = 12;
+    }
+  }
+}

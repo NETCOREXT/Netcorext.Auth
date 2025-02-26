@@ -64,6 +64,7 @@ public class CreateRoleHandler : IRequestHandler<CreateRole, Result<IEnumerable<
                                                        {
                                                            Id = id,
                                                            Name = t.Name,
+                                                           DisplayName = t.DisplayName,
                                                            Priority = t.Priority,
                                                            Disabled = t.Disabled,
                                                            ExtendData = t.ExtendData?

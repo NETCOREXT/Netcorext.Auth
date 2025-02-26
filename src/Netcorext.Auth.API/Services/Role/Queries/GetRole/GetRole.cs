@@ -7,6 +7,7 @@ public class GetRole : IRequest<Result<IEnumerable<Models.Role>>>
 {
     public long[]? Ids { get; set; }
     public string? Name { get; set; }
+    public string? DisplayName { get; set; }
     public bool? Disabled { get; set; }
     public RoleExtendData[]? ExtendData { get; set; }
     public Paging Paging { get; set; } = new();

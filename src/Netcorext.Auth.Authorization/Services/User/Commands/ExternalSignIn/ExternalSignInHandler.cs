@@ -172,6 +172,7 @@ public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<Toke
                                        {
                                            Id = t.RoleId,
                                            Name = t.Role.Name,
+                                           DisplayName = t.Role.DisplayName,
                                            Priority = t.Role.Priority,
                                            ExpireDate = t.ExpireDate
                                        })

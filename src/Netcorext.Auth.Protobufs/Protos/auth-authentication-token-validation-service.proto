@@ -1,0 +1,21 @@
+syntax = "proto3";
+package netcorext.auth.authentication;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+
+service TokenValidationService {
+  rpc ValidateToken (ValidateTokenRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+  ValidationParameter validationParameters = 2;
+  
+  message ValidationParameter {
+    bool validateIssuer = 1;
+    bool validateAudience = 2;
+    bool validateLifetime = 3;
+    bool validateIssuerSigningKey = 4;
+  }
+}

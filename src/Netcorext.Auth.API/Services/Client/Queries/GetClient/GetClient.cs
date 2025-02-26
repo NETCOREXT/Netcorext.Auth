@@ -17,6 +17,7 @@ public class GetClient : IRequest<Result<IEnumerable<Models.Client>>>
     {
         public long? RoleId { get; set; }
         public string? Name { get; set; }
+        public string? DisplayName { get; set; }
         public DateTimeOffset? ExpireDate { get; set; }
     }
 

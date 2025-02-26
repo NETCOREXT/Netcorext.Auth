@@ -30,6 +30,7 @@ public class GetRoleHandler : IRequestHandler<GetRole, Result<IEnumerable<Models
 
         if (request.Ids?.Any() == true) predicate = predicate.And(p => request.Ids.Contains(p.Id));
         if (!request.Name.IsEmpty()) predicate = predicate.And(p => p.Name == request.Name);
+        if (!request.DisplayName.IsEmpty()) predicate = predicate.And(p => p.DisplayName == request.DisplayName);
         if (request.Disabled.HasValue) predicate = predicate.And(p => p.Disabled == request.Disabled);
 
         if (request.ExtendData != null && request.ExtendData.Any())
@@ -64,6 +65,7 @@ public class GetRoleHandler : IRequestHandler<GetRole, Result<IEnumerable<Models
                                                                                    {
                                                                                        Id = t2.Id,
                                                                                        Name = t2.Name,
+                                                                                       DisplayName = t2.DisplayName,
                                                                                        Priority = t2.Priority,
                                                                                        Disabled = t2.Disabled,
                                                                                        ExtendData = t2.ExtendData.Select(t3 => new Models.RoleExtendData

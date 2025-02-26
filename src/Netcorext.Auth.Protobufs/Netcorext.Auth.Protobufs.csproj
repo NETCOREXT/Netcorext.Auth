@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <OutputType>Library</OutputType>
+    <Description />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.20" />
+    <PackageReference Include="Grpc.Core" Version="2.46" />
+    <PackageReference Include="Grpc.Tools" Version="2.46" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Netcorext.Contracts.Protobufs" Version="1.0.0-dev.*" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf OutputDir="$(Protobuf_OutputPath)" GrpcServices="None" ProtoRoot="Protos" Include="Protos/Enums/*.proto" />
+    <Protobuf OutputDir="$(Protobuf_OutputPath)" GrpcServices="Both" ProtoRoot="Protos" Include="Protos/*.proto" />
+  </ItemGroup>
+
+  <Target Name="CopyProtos" AfterTargets="ResolveReferences">
+    <ItemGroup>
+      <Netcorext_Contracts_Protobufs Include="$(PkgNetcorext_Contracts_Protobufs)/**/*.proto" />
+    </ItemGroup>
+    <Copy SourceFiles="@(Netcorext_Contracts_Protobufs)" DestinationFolder="$(ProjectDir)/Protos/Netcorext.Contracts.Protobufs/Result" Condition="Exists('%(RootDir)%(Directory)%(Filename)%(Extension)')" />
+  </Target>
+
+  <Import Project="../Versioning.targets"/>
+
+</Project>

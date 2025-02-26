@@ -1,0 +1,236 @@
+syntax = "proto3";
+package netcorext.auth.api;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Netcorext.Contracts.Protobufs/Result/paging.proto";
+import "Enums/permission-type.proto";
+import "Enums/operation-mode.proto";
+
+service RoleService {
+  rpc CreateRole (CreateRoleRequest) returns (CreateRoleRequest.Result);
+  rpc CloneRole (CloneRoleRequest) returns (CloneRoleRequest.Result);
+  rpc DeleteRole (DeleteRoleRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc GetRole (GetRoleRequest) returns (GetRoleRequest.Result);
+  rpc GetRoleFunction (GetRoleFunctionRequest) returns (GetRoleFunctionRequest.Result);
+  rpc RoleExists (RoleExistsRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc UpdateRole (UpdateRoleRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message CreateRoleRequest {
+  repeated Role roles = 1;
+
+  message Role {
+    string name = 1;
+    int32 priority = 2;
+    bool disabled = 3;
+    repeated RoleExtendData extendData = 4;
+    repeated string permissionFromStates = 5;
+    repeated RolePermission permissions = 6;
+    repeated RolePermissionCondition permissionConditions = 7;
+    google.protobuf.Int64Value customId = 8;
+    google.protobuf.StringValue displayName = 9;
+  }
+
+  message RoleExtendData {
+    string key = 1;
+    string value = 2;
+  }
+
+  message RolePermission {
+    int64 PermissionId = 1;
+  }
+
+  message RolePermissionCondition {
+    int64 permissionId = 1;
+    google.protobuf.StringValue group = 2;
+    string key = 3;
+    string value = 4;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    repeated int64 content = 3;
+  }
+}
+
+message CloneRoleRequest {
+  int64 sourceId = 1;
+  string name = 2;
+  int32 priority = 3;
+  bool disabled = 4;
+  repeated RoleExtendData extendData = 5;
+  repeated RolePermission permissions = 6;
+  repeated RolePermissionCondition permissionConditions = 7;
+  repeated DefaultPermissionCondition defaultPermissionConditions = 8;
+  google.protobuf.Int64Value customId = 9;
+  google.protobuf.StringValue displayName = 10;
+
+  message RoleExtendData {
+    string key = 1;
+    string value = 2;
+  }
+
+  message RolePermission {
+    int64 PermissionId = 1;
+  }
+
+  message RolePermissionCondition {
+    int64 permissionId = 1;
+    google.protobuf.StringValue group = 2;
+    string key = 3;
+    string value = 4;
+  }
+
+  message DefaultPermissionCondition {
+    google.protobuf.StringValue group = 1;
+    string key = 2;
+    string value = 3;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    google.protobuf.Int64Value content = 3;
+  }
+}
+
+message DeleteRoleRequest {
+  repeated int64 ids = 1;
+}
+
+message UpdateRoleRequest {
+  int64 id = 1;
+  google.protobuf.StringValue name = 2;
+  google.protobuf.Int32Value priority = 3;
+  google.protobuf.BoolValue disabled = 4;
+  repeated RoleExtendData extendData = 5;
+  repeated RolePermission permissions = 6;
+  repeated RolePermissionCondition permissionConditions = 7;
+  google.protobuf.StringValue displayName = 8;
+
+  message RoleExtendData {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    string key = 2;
+    string value = 3;
+  }
+
+  message RolePermission {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    int64 permissionId = 2;
+  }
+
+  message RolePermissionCondition {
+    netcorext.auth.protobufs.enums.CRUD crud = 1;
+    google.protobuf.Int64Value id = 2;
+    int64 permissionId = 3;
+    google.protobuf.StringValue group = 4;
+    string key = 5;
+    string value = 6;
+  }
+}
+
+message RoleExistsRequest {
+  google.protobuf.Int64Value id = 1;
+  string name = 2;
+}
+
+message GetRoleRequest {
+  netcorext.contracts.protobufs.Paging paging = 1;
+  repeated int64 ids = 2;
+  google.protobuf.StringValue name = 3;
+  google.protobuf.BoolValue disabled = 4;
+  repeated RoleExtendData extendData = 5;
+  google.protobuf.StringValue displayName = 6;
+
+  message RoleExtendData {
+    string key = 1;
+    string value = 2;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    netcorext.contracts.protobufs.Paging paging = 3;
+    repeated Role content = 4;
+
+    message Role {
+      int64 id = 1;
+      string name = 2;
+      int32 priority = 3;
+      bool disabled = 4;
+      repeated RoleExtendData extendData = 5;
+      repeated RolePermission permissions = 6;
+      repeated RolePermissionCondition permissionConditions = 7;
+      google.protobuf.Timestamp creationDate = 8;
+      int64 creatorId = 9;
+      google.protobuf.Timestamp modificationDate = 10;
+      int64 modifierId = 11;
+      google.protobuf.StringValue displayName = 12;
+    }
+
+    message RoleExtendData {
+      string key = 1;
+      string value = 2;
+      google.protobuf.Timestamp creationDate = 3;
+      int64 creatorId = 4;
+      google.protobuf.Timestamp modificationDate = 5;
+      int64 modifierId = 6;
+    }
+
+    message RolePermission {
+      int64 permissionId = 1;
+      string name = 2;
+      google.protobuf.Timestamp creationDate = 3;
+      int64 creatorId = 4;
+      google.protobuf.Timestamp modificationDate = 5;
+      int64 modifierId = 6;
+      google.protobuf.StringValue state = 7;
+    }
+
+    message RolePermissionCondition {
+      int64 id = 1;
+      int64 permissionId = 2;
+      google.protobuf.StringValue group = 3;
+      string key = 4;
+      string value = 5;
+      google.protobuf.Timestamp creationDate = 6;
+      int64 creatorId = 7;
+      google.protobuf.Timestamp modificationDate = 8;
+      int64 modifierId = 9;
+    }
+  }
+}
+
+message GetRoleFunctionRequest {
+  repeated int64 ids = 1;
+  repeated PermissionCondition permissionConditions = 2;
+
+  message PermissionCondition {
+    google.protobuf.StringValue group = 1;
+    repeated Condition conditions = 2;
+  }
+
+  message Condition {
+    string key = 1;
+    string value = 2;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    repeated RoleFunction content = 3;
+
+    message RoleFunction {
+      repeated Function functions = 1;
+    }
+
+    message Function {
+      string id = 1;
+      netcorext.auth.protobufs.enums.PermissionType permissionType = 2;
+    }
+  }
+}

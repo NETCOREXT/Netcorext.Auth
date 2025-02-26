@@ -11,6 +11,8 @@ public class RoleMap : EntityMap<Role>
         Builder.HasIndex(t => t.Name)
                .IsUnique();
 
+        Builder.HasIndex(t => t.DisplayName);
+
         Builder.HasIndex(t => t.Priority);
 
         Builder.HasIndex(t => t.Disabled);
@@ -18,6 +20,10 @@ public class RoleMap : EntityMap<Role>
         // Properties
         Builder.Property(t => t.Name)
                .HasColumnName(nameof(Role.Name))
+               .HasMaxLength(50);
+
+        Builder.Property(t => t.DisplayName)
+               .HasColumnName(nameof(Role.DisplayName))
                .HasMaxLength(50);
 
         Builder.Property(t => t.Priority)

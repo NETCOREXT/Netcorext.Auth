@@ -10,6 +10,7 @@ public class CreateRole : IRequest<Result<IEnumerable<long>>>
     public class Role
     {
         public string Name { get; set; } = null!;
+        public string? DisplayName { get; set; }
         public int Priority { get; set; }
         public bool Disabled { get; set; }
         public RoleExtendData[]? ExtendData { get; set; }

@@ -5,6 +5,7 @@ namespace Netcorext.Auth.Domain.Entities;
 public class Role : Entity
 {
     public string Name { get; set; } = null!;
+    public string? DisplayName { get; set; }
     public int Priority { get; set; }
     public bool Disabled { get; set; }
     public virtual ICollection<RoleExtendData> ExtendData { get; set; } = new HashSet<RoleExtendData>();

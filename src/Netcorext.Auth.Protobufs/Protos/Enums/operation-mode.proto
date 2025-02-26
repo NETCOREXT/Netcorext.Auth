@@ -1,0 +1,10 @@
+syntax = "proto3";
+package netcorext.auth.protobufs.enums;
+option csharp_namespace = "Netcorext.Auth.Protobufs.Enums";
+
+enum CRUD {
+  C = 0;
+  R = 1;
+  U = 2;
+  D = 3;
+}

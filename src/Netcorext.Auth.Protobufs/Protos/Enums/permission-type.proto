@@ -1,0 +1,14 @@
+syntax = "proto3";
+package netcorext.auth.protobufs.enums;
+option csharp_namespace = "Netcorext.Auth.Protobufs.Enums";
+
+enum PermissionType {
+  None = 0;
+  Read = 1;
+  Write = 2;
+  ReadWrite = 3;
+  Delete = 4;
+  ReadDelete = 5;
+  WriteDelete = 6;
+  All = 7;
+}

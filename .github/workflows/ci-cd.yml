@@ -22,6 +22,10 @@ jobs:
       app-authentication: ${{ steps.detect.outputs.app-authentication }}
       app-authorization: ${{ steps.detect.outputs.app-authorization }}
       app-gateway: ${{ steps.detect.outputs.app-gateway }}
+
+      app-abstractions: ${{ steps.detect.outputs.app-abstractions }}
+      app-extensions: ${{ steps.detect.outputs.app-extensions }}
+      app-protos: ${{ steps.detect.outputs.app-protos }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,6 +38,11 @@ jobs:
           APP_AUTHORIZATION="Netcorext.Auth.Authorization"
           APP_GATEWAY="Netcorext.Auth.Gateway"
           APP_CORE="Netcorext.Auth.Core"
+          
+          APP_ABSTRACTIONS="Netcorext.Auth.Abstractions"
+          APP_EXTENSIONS="Netcorext.Auth.Extensions.AspNetCore"
+          APP_PROTOS="Netcorext.Auth.Protobufs"
+          
 
           CHANGE_FILES=`git diff --no-commit-id --name-only HEAD^`
 
@@ -60,11 +69,34 @@ jobs:
             echo "No changes in ${APP_GATEWAY}"
             APP_GATEWAY=""
           fi
+          
+          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_ABSTRACTIONS}" || true`
+          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
+            echo "No changes in ${APP_ABSTRACTIONS}"
+            APP_ABSTRACTIONS=""
+          fi
+          
+          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_EXTENSIONS}" || true`
+          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
+            echo "No changes in ${APP_EXTENSIONS}"
+            APP_EXTENSIONS=""
+          fi
+          
+          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_PROTOS}" || true`
+          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
+            echo "No changes in ${APP_PROTOS}"
+            APP_PROTOS=""
+          fi
 
           echo "app=${APP}" >> $GITHUB_OUTPUT
           echo "app-authentication=${APP_AUTHENTICATION}" >> $GITHUB_OUTPUT
           echo "app-authorization=${APP_AUTHORIZATION}" >> $GITHUB_OUTPUT
           echo "app-gateway=${APP_GATEWAY}" >> $GITHUB_OUTPUT
+          
+          echo "app-abstractions=${APP_ABSTRACTIONS}" >> $GITHUB_OUTPUT
+          echo "app-extensions=${APP_EXTENSIONS}" >> $GITHUB_OUTPUT
+          echo "app-protos=${APP_PROTOS}" >> $GITHUB_OUTPUT
+
   Build:
     name: "Build ${{ needs.Detect.outputs.app }}"
     needs: Detect
@@ -149,6 +181,7 @@ jobs:
             --build-arg APP="${{ steps.envs.outputs.app }}" \
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
 
+
   Build-Authorization:
     name: "Build ${{ needs.Detect.outputs.app-authorization }}"
     needs: Detect
@@ -190,6 +223,7 @@ jobs:
           build-arg: |-
             --build-arg APP="${{ steps.envs.outputs.app }}" \
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
+
   Build-Gateway:
     name: "Build ${{ needs.Detect.outputs.app-gateway }}"
     needs: Detect
@@ -231,3 +265,67 @@ jobs:
           build-arg: |-
             --build-arg APP="${{ steps.envs.outputs.app }}" \
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
+
+
+  Build-Abstractions:
+    needs: Detect
+    if: needs.Detect.outputs.app-abstractions != ''
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.build.outputs.artifact }}
+    steps:
+      - id: build
+        name: Build Package
+        uses: netcorext/dotnet-build-package-action@dev
+  Deploy-Abstractions:
+    needs: Build-Abstractions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: netcorext/push-nuget-package-action@dev
+        name: Push Package
+        with:
+          artifact: ${{ needs.Build-Abstractions.outputs.artifact }}
+          nuget-api-url: ${{ vars.NUGET_API_URL }}
+          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+
+  Build-Extensions:
+    needs: Detect
+    if: needs.Detect.outputs.app-extensions != ''
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.build.outputs.artifact }}
+    steps:
+      - id: build
+        name: Build Package
+        uses: netcorext/dotnet-build-package-action@dev
+  Deploy-Extensions:
+    needs: Build-Extensions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: netcorext/push-nuget-package-action@dev
+        name: Push Package
+        with:
+          artifact: ${{ needs.Build-Extensions.outputs.artifact }}
+          nuget-api-url: ${{ vars.NUGET_API_URL }}
+          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+
+  Build-Protos:
+    needs: Detect
+    if: needs.Detect.outputs.app-protos != ''
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.build.outputs.artifact }}
+    steps:
+      - id: build
+        name: Build Package
+        uses: netcorext/dotnet-build-package-action@dev
+  Deploy-Protos:
+    needs: Build-Protos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: netcorext/push-nuget-package-action@dev
+        name: Push Package
+        with:
+          artifact: ${{ needs.Build-Protos.outputs.artifact }}
+          nuget-api-url: ${{ vars.NUGET_API_URL }}
+          nuget-api-key: ${{ secrets.NUGET_API_KEY }}

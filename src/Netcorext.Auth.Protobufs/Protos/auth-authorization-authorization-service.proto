@@ -1,0 +1,185 @@
+syntax = "proto3";
+package netcorext.auth.authorization;
+option csharp_namespace = "Netcorext.Auth.Protobufs";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+import "Netcorext.Contracts.Protobufs/Result/result.proto";
+
+service AuthorizationService {
+  rpc CreateToken (CreateTokenRequest) returns (CreateTokenRequest.Result);
+  rpc ExternalSignIn (ExternalSignInRequest) returns (ExternalSignInRequest.Result);
+  rpc ResetOtp (ResetOtpRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc ResetPassword (ResetPasswordRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc RevokeToken (RevokeTokenRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc SignIn (SignInRequest) returns (SignInRequest.Result);
+  rpc SignOut (SignOutRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc ValidateOtp (ValidateOtpRequest) returns (netcorext.contracts.protobufs.Result);
+  rpc ValidateUser (ValidateUserRequest) returns (netcorext.contracts.protobufs.Result);
+}
+
+message CreateTokenRequest {
+  string grantType = 1;
+  string clientId = 2;
+  string clientSecret = 3;
+  google.protobuf.StringValue username = 4;
+  google.protobuf.StringValue password = 5;
+  google.protobuf.StringValue uniqueId = 6;
+  google.protobuf.StringValue scope = 7;
+  google.protobuf.StringValue refreshToken = 8;
+  google.protobuf.BoolValue includeRolesInfo = 9;
+  google.protobuf.BoolValue includeConfirmedInfo = 10;
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    TokenResult content = 3;
+
+    message TokenResult {
+      google.protobuf.StringValue tokenType = 1;
+      google.protobuf.StringValue accessToken = 2;
+      google.protobuf.Int32Value expiresIn = 3;
+      google.protobuf.StringValue scope = 4;
+      google.protobuf.StringValue refreshToken = 5;
+      google.protobuf.StringValue nameId = 6;
+      google.protobuf.StringValue error = 7;
+      google.protobuf.StringValue errorDescription = 8;
+      repeated Role roles = 9;
+      bool hasPassword = 10;
+      bool emailConfirmed = 11;
+      bool phoneNumberConfirmed = 12;
+      bool verified = 13;
+    }
+
+    message Role {
+      int64 id = 1;
+      string name = 2;
+      int32 priority = 3;
+      google.protobuf.Timestamp expireDate = 4;
+    }
+  }
+}
+
+message ExternalSignInRequest {
+  string username = 1;
+  string provider = 2;
+  string uniqueId = 3;
+  google.protobuf.StringValue displayName = 4;
+  google.protobuf.StringValue email = 5;
+  google.protobuf.StringValue phoneNumber = 6;
+  google.protobuf.StringValue otp = 7;
+  bool allowedRefreshToken = 8;
+  google.protobuf.Int32Value tokenExpireSeconds = 9;
+  google.protobuf.Int32Value refreshTokenExpireSeconds = 10;
+  google.protobuf.Int32Value codeExpireSeconds = 11;
+  repeated UserRole roles = 12;
+  google.protobuf.Int64Value customId = 13;
+  bool ThrowErrorWhenUserNotFound = 14;
+  google.protobuf.BoolValue includeRolesInfo = 15;
+  google.protobuf.BoolValue includeConfirmedInfo = 16;
+  google.protobuf.StringValue password = 17;
+
+  message UserRole {
+    int64 roleId = 1;
+    google.protobuf.Timestamp expireDate = 2;
+  }
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    TokenResult content = 3;
+
+    message TokenResult {
+      google.protobuf.StringValue tokenType = 1;
+      google.protobuf.StringValue accessToken = 2;
+      google.protobuf.Int32Value expiresIn = 3;
+      google.protobuf.StringValue scope = 4;
+      google.protobuf.StringValue refreshToken = 5;
+      google.protobuf.StringValue nameId = 6;
+      google.protobuf.StringValue error = 7;
+      google.protobuf.StringValue errorDescription = 8;
+      repeated Role roles = 9;
+      bool hasPassword = 10;
+      bool emailConfirmed = 11;
+      bool phoneNumberConfirmed = 12;
+      bool verified = 13;
+    }
+
+    message Role {
+      int64 id = 1;
+      string name = 2;
+      int32 priority = 3;
+      google.protobuf.Timestamp expireDate = 4;
+    }
+  }
+}
+
+message ResetOtpRequest {
+  google.protobuf.Int64Value id = 1;
+  google.protobuf.StringValue username = 2;
+}
+
+message ResetPasswordRequest {
+  int64 id = 1;
+  google.protobuf.StringValue password = 2;
+}
+
+message RevokeTokenRequest {
+  google.protobuf.StringValue resourceId = 1;
+  google.protobuf.StringValue token = 2;
+  google.protobuf.BoolValue allDevice = 3;
+}
+
+message SignInRequest {
+  string username = 1;
+  string password = 2;
+  google.protobuf.StringValue otp = 3;
+  google.protobuf.BoolValue includeRolesInfo = 4;
+  google.protobuf.BoolValue includeConfirmedInfo = 5;
+
+  message Result {
+    string code = 1;
+    string message = 2;
+    TokenResult content = 3;
+
+    message TokenResult {
+      google.protobuf.StringValue tokenType = 1;
+      google.protobuf.StringValue accessToken = 2;
+      google.protobuf.Int32Value expiresIn = 3;
+      google.protobuf.StringValue scope = 4;
+      google.protobuf.StringValue refreshToken = 5;
+      google.protobuf.StringValue nameId = 6;
+      google.protobuf.StringValue error = 7;
+      google.protobuf.StringValue errorDescription = 8;
+      repeated Role roles = 9;
+      bool hasPassword = 10;
+      bool emailConfirmed = 11;
+      bool phoneNumberConfirmed = 12;
+      bool verified = 13;
+    }
+
+    message Role {
+      int64 id = 1;
+      string name = 2;
+      int32 priority = 3;
+      google.protobuf.Timestamp expireDate = 4;
+    }
+  }
+}
+
+message SignOutRequest {
+  string token = 1;
+  bool allDevice = 2;
+}
+
+message ValidateOtpRequest {
+  google.protobuf.Int64Value id = 1;
+  google.protobuf.StringValue username = 2;
+  string otp = 3;
+}
+
+message ValidateUserRequest {
+  google.protobuf.Int64Value id = 1;
+  google.protobuf.StringValue username = 2;
+  string password = 3;
+}
