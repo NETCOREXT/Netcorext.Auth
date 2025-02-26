@@ -98,7 +98,7 @@ jobs:
           echo "app-protos=${APP_PROTOS}" >> $GITHUB_OUTPUT
 
   Build:
-    name: "Build ${{ needs.Detect.outputs.app }}"
+    name: "Build Netcorext.Auth.API"
     needs: Detect
     if: needs.Detect.outputs.app != ''
     runs-on: ubuntu-latest
@@ -140,7 +140,7 @@ jobs:
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
 
   Build-Authentication:
-    name: "Build ${{ needs.Detect.outputs.app-authentication }}"
+    name: "Build Netcorext.Auth.Authentication"
     needs: Detect
     if: needs.Detect.outputs.app-authentication != ''
     runs-on: ubuntu-latest
@@ -183,7 +183,7 @@ jobs:
 
 
   Build-Authorization:
-    name: "Build ${{ needs.Detect.outputs.app-authorization }}"
+    name: "Build Netcorext.Auth.Authorization"
     needs: Detect
     if: needs.Detect.outputs.app-authorization != ''
     runs-on: ubuntu-latest
@@ -225,7 +225,7 @@ jobs:
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
 
   Build-Gateway:
-    name: "Build ${{ needs.Detect.outputs.app-gateway }}"
+    name: "Build Netcorext.Auth.Gateway"
     needs: Detect
     if: needs.Detect.outputs.app-gateway != ''
     runs-on: ubuntu-latest
@@ -268,7 +268,7 @@ jobs:
 
 
   Build-Abstractions:
-    name: "Build ${{ needs.Detect.outputs.app-abstractions }}"
+    name: "Build Netcorext.Auth.Abstractions"
     needs: Detect
     if: needs.Detect.outputs.app-abstractions != ''
     runs-on: ubuntu-latest
@@ -279,7 +279,7 @@ jobs:
         name: Build Package
         uses: netcorext/dotnet-build-package-action@dev
   Deploy-Abstractions:
-    name: "Deploy ${{ needs.Detect.outputs.app-abstractions }}"
+    name: "Deploy Netcorext.Auth.Abstractions"
     needs: Build-Abstractions
     runs-on: ubuntu-latest
     steps:
@@ -291,7 +291,7 @@ jobs:
           nuget-api-key: ${{ secrets.NUGET_API_KEY }}
 
   Build-Extensions:
-    name: "Build ${{ needs.Detect.outputs.app-extensions }}"
+    name: "Build Netcorext.Auth.Extensions.AspNetCore"
     needs: Detect
     if: needs.Detect.outputs.app-extensions != ''
     runs-on: ubuntu-latest
@@ -302,7 +302,7 @@ jobs:
         name: Build Package
         uses: netcorext/dotnet-build-package-action@dev
   Deploy-Extensions:
-    name: "Deploy ${{ needs.Detect.outputs.app-extensions }}"
+    name: "Deploy Netcorext.Auth.Extensions.AspNetCore"
     needs: Build-Extensions
     runs-on: ubuntu-latest
     steps:
@@ -314,7 +314,7 @@ jobs:
           nuget-api-key: ${{ secrets.NUGET_API_KEY }}
 
   Build-Protos:
-    name: "Build ${{ needs.Detect.outputs.app-protos }}"
+    name: "Build Netcorext.Auth.Protobufs"
     needs: Detect
     if: needs.Detect.outputs.app-protos != ''
     runs-on: ubuntu-latest
@@ -325,7 +325,7 @@ jobs:
         name: Build Package
         uses: netcorext/dotnet-build-package-action@dev
   Deploy-Protos:
-    name: "Deploy ${{ needs.Detect.outputs.app-protos }}"
+    name: "Deploy Netcorext.Auth.Protobufs"
     needs: Build-Protos
     runs-on: ubuntu-latest
     steps:
