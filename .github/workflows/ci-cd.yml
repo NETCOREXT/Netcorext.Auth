@@ -278,6 +278,8 @@ jobs:
       - id: build
         name: Build Package
         uses: netcorext/dotnet-build-package-action@dev
+        with:
+          app: ${{ needs.Detect.outputs.app-abstractions }}
   Deploy-Abstractions:
     name: "Deploy Netcorext.Auth.Abstractions"
     needs: Build-Abstractions
@@ -301,6 +303,8 @@ jobs:
       - id: build
         name: Build Package
         uses: netcorext/dotnet-build-package-action@dev
+        with:
+          app: ${{ needs.Detect.outputs.app-extensions }}
   Deploy-Extensions:
     name: "Deploy Netcorext.Auth.Extensions.AspNetCore"
     needs: Build-Extensions
@@ -324,6 +328,8 @@ jobs:
       - id: build
         name: Build Package
         uses: netcorext/dotnet-build-package-action@dev
+        with:
+          app: ${{ needs.Detect.outputs.app-protos }}
   Deploy-Protos:
     name: "Deploy Netcorext.Auth.Protobufs"
     needs: Build-Protos
