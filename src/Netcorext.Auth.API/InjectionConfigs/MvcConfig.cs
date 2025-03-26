@@ -1,10 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Asp.Versioning;
 using Microsoft.AspNetCore.HttpLogging;
 using Netcorext.Auth.API.Settings;
 using Netcorext.Configuration.ConfigSections;
 using Netcorext.Extensions.Linq;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Netcorext.Auth.API.InjectionConfigs;
 

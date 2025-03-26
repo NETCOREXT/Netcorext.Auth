@@ -43,6 +43,8 @@ public class AppConfig
                     });
 
         app.UseDefaultHealthChecks(config.Route.RoutePrefix + config.Route.HealthRoute, config.Route.HealthRoute);
+
+        app.MapControllers();
         app.MapGrpcService<ClientServiceFacade>();
         app.MapGrpcService<PermissionServiceFacade>();
         app.MapGrpcService<RoleServiceFacade>();
