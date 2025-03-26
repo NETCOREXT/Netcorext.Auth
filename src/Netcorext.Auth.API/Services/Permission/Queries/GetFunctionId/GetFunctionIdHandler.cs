@@ -17,7 +17,10 @@ public class GetFunctionIdHandler : IRequestHandler<GetFunctionId, Result<IEnume
     {
         var ds = _context.Set<Domain.Entities.Rule>();
 
-        var ids = ds.Select(t => t.FunctionId).ToArray();
+        var ids = ds.Select(t => t.FunctionId)
+                    .Distinct()
+                    .OrderBy(t => t)
+                    .ToArray();
 
         return Result<IEnumerable<string>>.Success.Clone(ids);
     }
