@@ -69,6 +69,7 @@ public class RegisterRouteHandler : IRequestHandler<RegisterRoute, Result>
                 entGroup.ForwarderAllowResponseBuffering = group.ForwarderAllowResponseBuffering;
 
                 var routes = group.Routes
+                                  .Where(t => !t.RelativePath.Equals("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo", StringComparison.CurrentCultureIgnoreCase))
                                   .Select(t2 =>
                                           {
                                               var id = _snowflake.Generate();

@@ -21,4 +21,5 @@ public class AppSettings
     public string RequestIdHeaderName { get; set; } = "X-Request-Id";
     public string[] RequestIdFromHeaderNames { get; set; } = { "X-Request-Id" };
     public bool EnableAspNetCoreLogger { get; set; }
+    public long[]? Owner { get; set; }
 }

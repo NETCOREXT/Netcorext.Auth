@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.Extensions.Options;
-using Netcorext.Auth.API.Settings;
+using Netcorext.Auth.Authorization.Settings;
 using Netcorext.Auth.Enums;
 using Netcorext.Contracts;
 using Netcorext.EntityFramework.UserIdentityPattern;
@@ -8,7 +8,7 @@ using Netcorext.Extensions.Commons;
 using Netcorext.Extensions.Linq;
 using Netcorext.Mediator;
 
-namespace Netcorext.Auth.API.Services.User.Queries;
+namespace Netcorext.Auth.Authorization.Services.Authorization.User.Queries;
 
 public class GetUserFunctionHandler : IRequestHandler<GetUserFunction, Result<IEnumerable<Models.UserFunction>>>
 {

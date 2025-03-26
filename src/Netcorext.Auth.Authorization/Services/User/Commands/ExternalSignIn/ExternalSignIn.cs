@@ -26,4 +26,5 @@ public class ExternalSignIn : IRequest<Result<TokenResult>>
     public bool ThrowErrorWhenUserNotFound { get; set; }
     public bool IncludeRolesInfo { get; set; }
     public bool IncludeConfirmedInfo { get; set; }
+    public bool IncludeRules { get; set; }
 }

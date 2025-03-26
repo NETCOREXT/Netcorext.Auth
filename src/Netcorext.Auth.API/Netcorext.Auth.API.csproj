@@ -2,8 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Netcorext.Extensions.Swagger" Version="1.0.0-dev.*"/>
+  </ItemGroup>
+  
   <Import Project="../Packages.targets"/>
   <Import Project="../Versioning.targets"/>
 

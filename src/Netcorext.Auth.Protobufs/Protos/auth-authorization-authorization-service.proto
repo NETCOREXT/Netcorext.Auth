@@ -5,6 +5,7 @@ option csharp_namespace = "Netcorext.Auth.Protobufs";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
 import "Netcorext.Contracts.Protobufs/Result/result.proto";
+import "Enums/permission-type.proto";
 
 service AuthorizationService {
   rpc CreateToken (CreateTokenRequest) returns (CreateTokenRequest.Result);
@@ -29,6 +30,7 @@ message CreateTokenRequest {
   google.protobuf.StringValue refreshToken = 8;
   google.protobuf.BoolValue includeRolesInfo = 9;
   google.protobuf.BoolValue includeConfirmedInfo = 10;
+  google.protobuf.BoolValue includeRules = 11;
 
   message Result {
     string code = 1;
@@ -49,6 +51,7 @@ message CreateTokenRequest {
       bool emailConfirmed = 11;
       bool phoneNumberConfirmed = 12;
       bool verified = 13;
+      repeated Rule rules = 14;
     }
 
     message Role {
@@ -56,6 +59,11 @@ message CreateTokenRequest {
       string name = 2;
       int32 priority = 3;
       google.protobuf.Timestamp expireDate = 4;
+    }
+
+    message Rule {
+      string id = 1;
+      netcorext.auth.protobufs.enums.PermissionType permissionType = 2;
     }
   }
 }
@@ -78,6 +86,7 @@ message ExternalSignInRequest {
   google.protobuf.BoolValue includeRolesInfo = 15;
   google.protobuf.BoolValue includeConfirmedInfo = 16;
   google.protobuf.StringValue password = 17;
+  google.protobuf.BoolValue includeRules = 18;
 
   message UserRole {
     int64 roleId = 1;
@@ -103,6 +112,7 @@ message ExternalSignInRequest {
       bool emailConfirmed = 11;
       bool phoneNumberConfirmed = 12;
       bool verified = 13;
+      repeated Rule rules = 14;
     }
 
     message Role {
@@ -110,6 +120,11 @@ message ExternalSignInRequest {
       string name = 2;
       int32 priority = 3;
       google.protobuf.Timestamp expireDate = 4;
+    }
+
+    message Rule {
+      string id = 1;
+      netcorext.auth.protobufs.enums.PermissionType permissionType = 2;
     }
   }
 }
@@ -136,6 +151,7 @@ message SignInRequest {
   google.protobuf.StringValue otp = 3;
   google.protobuf.BoolValue includeRolesInfo = 4;
   google.protobuf.BoolValue includeConfirmedInfo = 5;
+  google.protobuf.BoolValue includeRules = 6;
 
   message Result {
     string code = 1;
@@ -156,6 +172,7 @@ message SignInRequest {
       bool emailConfirmed = 11;
       bool phoneNumberConfirmed = 12;
       bool verified = 13;
+      repeated Rule rules = 14;
     }
 
     message Role {
@@ -163,6 +180,11 @@ message SignInRequest {
       string name = 2;
       int32 priority = 3;
       google.protobuf.Timestamp expireDate = 4;
+    }
+
+    message Rule {
+      string id = 1;
+      netcorext.auth.protobufs.enums.PermissionType permissionType = 2;
     }
   }
 }

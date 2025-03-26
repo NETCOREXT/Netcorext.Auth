@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Netcorext.Algorithms;
 using Netcorext.Auth.Authorization.Models;
+using Netcorext.Auth.Authorization.Services.Authorization.User.Queries;
 using Netcorext.Auth.Authorization.Settings;
 using Netcorext.Auth.Enums;
 using Netcorext.Auth.Extensions;
@@ -21,6 +22,7 @@ namespace Netcorext.Auth.Authorization.Services.Token.Commands;
 
 public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResult>>
 {
+    private readonly IDispatcher _dispatcher;
     private readonly DatabaseContext _context;
     private readonly ISnowflake _snowflake;
     private readonly JwtGenerator _jwtGenerator;
@@ -29,8 +31,9 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
     private readonly ConfigSettings _config;
     private readonly AuthOptions _authOptions;
 
-    public CreateTokenHandler(DatabaseContextAdapter context, ISnowflake snowflake, JwtGenerator jwtGenerator, RedisClient redis, ISerializer serializer, IOptions<AuthOptions> authOptions, IOptions<ConfigSettings> config)
+    public CreateTokenHandler(IDispatcher dispatcher, DatabaseContextAdapter context, ISnowflake snowflake, JwtGenerator jwtGenerator, RedisClient redis, ISerializer serializer, IOptions<AuthOptions> authOptions, IOptions<ConfigSettings> config)
     {
+        _dispatcher = dispatcher;
         _context = context;
         _snowflake = snowflake;
         _jwtGenerator = jwtGenerator;
@@ -297,6 +300,30 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                ? _jwtGenerator.Generate(TokenType.RefreshToken, ResourceType.User, user.Id.ToString(), null, user.DisplayName, user.RefreshTokenExpireSeconds, request.Scope ?? scope, label)
                                : JwtGenerator.DefaultGenerateEmpty;
 
+
+
+        var rules = Array.Empty<Function>();
+
+        if (request.IncludeRules)
+        {
+            var userFunctionResult = await _dispatcher.SendAsync(new GetUserFunction
+                                                {
+                                                    Id =    user.Id
+                                                }, cancellationToken);
+
+            if (userFunctionResult.IsSuccess())
+            {
+                rules = userFunctionResult.Content?
+                                          .SelectMany(t => t.Functions)
+                                          .Select(t => new Function
+                                                       {
+                                                           Id = t.Id,
+                                                           PermissionType = t.PermissionType
+                                                       })
+                                          .ToArray();
+            }
+        }
+
         var result = Result<TokenResult>.Success.Clone(new TokenResult
                                                        {
                                                            TokenType = Constants.OAuth.TOKEN_TYPE_BEARER,
@@ -309,7 +336,8 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                                            HasPassword = request.IncludeConfirmedInfo ? !user.Password.IsEmpty() : null,
                                                            EmailConfirmed = request.IncludeConfirmedInfo ? user.EmailConfirmed : null,
                                                            PhoneNumberConfirmed = request.IncludeConfirmedInfo ? user.PhoneNumberConfirmed : null,
-                                                           Verified = user.Verified
+                                                           Verified = user.Verified,
+                                                           Rules = request.IncludeRules ? rules : null
                                                        });
 
         if (cache != null && !cache.Key.IsEmpty() && cache.ServerDuration is > 0)
@@ -483,6 +511,28 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                    ? _jwtGenerator.Generate(TokenType.RefreshToken, resourceType, resourceId!, uid, nickname, refreshTokenExpireSeconds, scope, label)
                                    : JwtGenerator.DefaultGenerateEmpty;
 
+            var rules = Array.Empty<Function>();
+
+            if (request.IncludeRules && !resourceId.IsEmpty() && resourceType == ResourceType.User)
+            {
+                var userFunctionResult = await _dispatcher.SendAsync(new GetUserFunction
+                                                                     {
+                                                                         Id = long.Parse(resourceId)
+                                                                     }, cancellationToken);
+
+                if (userFunctionResult.IsSuccess())
+                {
+                    rules = userFunctionResult.Content?
+                                              .SelectMany(t => t.Functions)
+                                              .Select(t => new Function
+                                                           {
+                                                               Id = t.Id,
+                                                               PermissionType = t.PermissionType
+                                                           })
+                                              .ToArray();
+                }
+            }
+
             var result = Result<TokenResult>.Success.Clone(new TokenResult
                                                            {
                                                                TokenType = Constants.OAuth.TOKEN_TYPE_BEARER,
@@ -495,7 +545,8 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                                                HasPassword = request.IncludeConfirmedInfo ? hasPassword : null,
                                                                EmailConfirmed = request.IncludeConfirmedInfo ? emailConfirmed : null,
                                                                PhoneNumberConfirmed = request.IncludeConfirmedInfo ? phoneNumberConfirmed : null,
-                                                               Verified = verified
+                                                               Verified = verified,
+                                                               Rules = request.IncludeRules ? rules : null
                                                            });
 
             if (cache != null && !cache.Key.IsEmpty() && cache.ServerDuration is > 0)

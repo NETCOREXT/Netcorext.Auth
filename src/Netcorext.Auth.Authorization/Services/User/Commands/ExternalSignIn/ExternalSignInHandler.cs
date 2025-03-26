@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Netcorext.Algorithms;
 using Netcorext.Auth.Authorization.Models;
+using Netcorext.Auth.Authorization.Services.Authorization.User.Queries;
 using Netcorext.Auth.Authorization.Settings;
 using Netcorext.Auth.Enums;
 using Netcorext.Auth.Extensions;
@@ -18,6 +19,7 @@ namespace Netcorext.Auth.Authorization.Services.User.Commands;
 
 public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<TokenResult>>
 {
+    private readonly IDispatcher _dispatcher;
     private readonly DatabaseContext _context;
     private readonly RedisClient _redis;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -26,8 +28,9 @@ public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<Toke
     private readonly ConfigSettings _config;
     private readonly AuthOptions _authOptions;
 
-    public ExternalSignInHandler(DatabaseContextAdapter context, RedisClient redis, IHttpContextAccessor httpContextAccessor, ISnowflake snowflake, JwtGenerator jwtGenerator, IOptions<ConfigSettings> config, IOptions<AuthOptions> authOptions)
+    public ExternalSignInHandler(IDispatcher dispatcher, DatabaseContextAdapter context, RedisClient redis, IHttpContextAccessor httpContextAccessor, ISnowflake snowflake, JwtGenerator jwtGenerator, IOptions<ConfigSettings> config, IOptions<AuthOptions> authOptions)
     {
+        _dispatcher = dispatcher;
         _context = context;
         _redis = redis;
         _httpContextAccessor = httpContextAccessor;
@@ -191,6 +194,28 @@ public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<Toke
                                ? _jwtGenerator.Generate(TokenType.RefreshToken, ResourceType.User, entity.Id.ToString(), request.UniqueId, entity.DisplayName, entity.RefreshTokenExpireSeconds, scope, label)
                                : JwtGenerator.DefaultGenerateEmpty;
 
+        var rules = Array.Empty<Function>();
+
+        if (request.IncludeRules)
+        {
+            var userFunctionResult = await _dispatcher.SendAsync(new GetUserFunction
+                                                                 {
+                                                                     Id = entity.Id
+                                                                 }, cancellationToken);
+
+            if (userFunctionResult.IsSuccess())
+            {
+                rules = userFunctionResult.Content?
+                                          .SelectMany(t => t.Functions)
+                                          .Select(t => new Function
+                                                       {
+                                                           Id = t.Id,
+                                                           PermissionType = t.PermissionType
+                                                       })
+                                          .ToArray();
+            }
+        }
+
         var result = Result<TokenResult>.Success.Clone(new TokenResult
                                                        {
                                                            TokenType = Constants.OAuth.TOKEN_TYPE_BEARER,
@@ -203,7 +228,8 @@ public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<Toke
                                                            HasPassword = request.IncludeConfirmedInfo ? !entity.Password.IsEmpty() : null,
                                                            EmailConfirmed = request.IncludeConfirmedInfo ? entity.EmailConfirmed : null,
                                                            PhoneNumberConfirmed = request.IncludeConfirmedInfo ? entity.PhoneNumberConfirmed : null,
-                                                           Verified = entity.Verified
+                                                           Verified = entity.Verified,
+                                                           Rules = request.IncludeRules ? rules : null
                                                        });
 
         if (cache != null && !cache.Key.IsEmpty() && cache.ServerDuration is > 0)

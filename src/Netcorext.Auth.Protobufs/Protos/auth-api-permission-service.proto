@@ -16,6 +16,7 @@ service PermissionService {
   rpc DeletePermission (DeletePermissionRequest) returns (netcorext.contracts.protobufs.Result);
   rpc GetPermission (GetPermissionRequest) returns (GetPermissionRequest.Result);
   rpc GetRouteFunction (google.protobuf.Empty) returns (GetRouteFunctionResult);
+  rpc GetFunctionId (google.protobuf.Empty) returns (GetFunctionIdResult);
   rpc UpdatePermission (UpdatePermissionRequest) returns (netcorext.contracts.protobufs.Result);
 }
 
@@ -111,6 +112,12 @@ message GetPermissionRequest {
 }
 
 message GetRouteFunctionResult {
+  string code = 1;
+  string message = 2;
+  repeated string content = 3;
+}
+
+message GetFunctionIdResult {
   string code = 1;
   string message = 2;
   repeated string content = 3;

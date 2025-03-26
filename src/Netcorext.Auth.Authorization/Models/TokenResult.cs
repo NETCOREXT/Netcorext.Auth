@@ -43,4 +43,6 @@ public class TokenResult
     [JsonPropertyName("verified")]
     public bool? Verified { get; set; }
 
+    [JsonPropertyName("rules")]
+    public virtual ICollection<Function>? Rules { get; set; }
 }

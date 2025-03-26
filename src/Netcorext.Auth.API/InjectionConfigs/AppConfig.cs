@@ -52,6 +52,7 @@ public class AppConfig
 
         if (app.Environment.IsDevelopment())
         {
+            app.UseSwagger((config.Route.RoutePrefix + config.Document.Url).ToLower());
             app.MapGrpcReflectionService();
         }
 

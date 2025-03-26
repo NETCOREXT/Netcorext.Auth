@@ -47,4 +47,8 @@ public class CreateToken : IRequest<Result<TokenResult>>
     [FromForm(Name = "include_confirmed_info")]
     [JsonPropertyName("include_confirmed_info")]
     public bool IncludeConfirmedInfo { get; set; }
+
+    [FromForm(Name = "include_rules")]
+    [JsonPropertyName("include_rules")]
+    public bool IncludeRules { get; set; }
 }

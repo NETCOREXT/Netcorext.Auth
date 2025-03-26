@@ -21,7 +21,6 @@
   <ItemGroup>
     <PackageReference Include="Netcorext.Algorithms.Otp" Version="1.0.*" />
     <PackageReference Include="Netcorext.Algorithms.Snowflake" Version="1.0.*" />
-    <PackageReference Include="Netcorext.Auth.Extensions.AspNetCore" Version="1.0.1-dev.*" />
     <PackageReference Include="Netcorext.Contracts.Abstractions" Version="1.0.1-dev.*" />
     <PackageReference Include="Netcorext.Diagnostics.HealthChecks.AspNetCore" Version="1.0.*" />
     <PackageReference Include="Netcorext.Diagnostics.HealthChecks.PostgreSql" Version="1.0.*" />
@@ -48,6 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Netcorext.Auth.Extensions.AspNetCore/Netcorext.Auth.Extensions.AspNetCore.csproj" />
     <ProjectReference Include="../Netcorext.Auth.Core/Netcorext.Auth.Core.csproj" />
   </ItemGroup>
 

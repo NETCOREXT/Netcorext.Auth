@@ -64,4 +64,19 @@ public class PermissionServiceFacade : PermissionService.PermissionServiceBase
 
         return result;
     }
+
+    public override async Task<GetFunctionIdResult> GetFunctionId(Empty request, ServerCallContext context)
+    {
+        var req = new GetFunctionId();
+        var rep = await _dispatcher.SendAsync(req);
+
+        var result = new GetFunctionIdResult
+                     {
+                         Code = rep.Code,
+                         Message = rep.Message,
+                         Content = { rep.Content }
+                     };
+
+        return result;
+    }
 }
