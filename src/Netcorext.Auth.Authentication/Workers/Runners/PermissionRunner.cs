@@ -77,7 +77,7 @@ internal class PermissionRunner : IWorkerRunner<AuthWorker>
 
             if (reqIds != null && reqIds.Any())
             {
-                var rules = cachePermissionRule.Where(t => reqIds.Contains(t.Value.Id))
+                var rules = cachePermissionRule.Where(t => reqIds.Contains(t.Value.PermissionId))
                                                .ToArray();
 
                 rules.ForEach(t => cachePermissionRule.Remove(t.Key));
