@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Netcorext.Auth.Gateway.Services.Route;
 using Netcorext.Auth.Gateway.Settings;
+using Netcorext.EntityFramework.UserIdentityPattern.AspNetCore;
 using Netcorext.Extensions.AspNetCore.Middlewares;
 using Netcorext.Logging.AspNetCoreLogger;
 
@@ -46,6 +47,8 @@ public class AppConfig
         }
 
         app.MapReverseProxy();
+
+        app.Lifetime.ApplicationStarted.Register(app.WarmupDbContext);
 
         app.Run();
     }

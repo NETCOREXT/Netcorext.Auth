@@ -2,6 +2,7 @@ using Mapster;
 using Microsoft.Extensions.Options;
 using Netcorext.Auth.Authorization.Services.Authorization;
 using Netcorext.Auth.Authorization.Settings;
+using Netcorext.EntityFramework.UserIdentityPattern.AspNetCore;
 using Netcorext.Extensions.AspNetCore.Middlewares;
 using Netcorext.Logging.AspNetCoreLogger;
 
@@ -55,6 +56,8 @@ public class AppConfig
                                             registerConfig.RouteGroupName = config.Id;
                                             registerConfig.RouteServiceUrl = config.Services["Netcorext.Auth.Gateway"].Url;
                                         });
+
+        app.Lifetime.ApplicationStarted.Register(app.WarmupDbContext);
 
         app.Run();
     }

@@ -3,6 +3,7 @@ using Netcorext.Auth.Authentication.Middlewares;
 using Netcorext.Auth.Authentication.Services.Permission;
 using Netcorext.Auth.Authentication.Services.Token;
 using Netcorext.Auth.Authentication.Settings;
+using Netcorext.EntityFramework.UserIdentityPattern.AspNetCore;
 using Netcorext.Extensions.AspNetCore.Middlewares;
 using Netcorext.Logging.AspNetCoreLogger;
 
@@ -49,6 +50,8 @@ public class AppConfig
         app.MapGrpcService<PermissionValidationServiceFacade>();
         app.MapGrpcService<TokenValidationServiceFacade>();
         app.MapReverseProxy();
+
+        app.Lifetime.ApplicationStarted.Register(app.WarmupDbContext);
 
         app.Run();
     }
