@@ -12,9 +12,9 @@ namespace Netcorext.Auth.Gateway.InjectionConfigs;
 [Injection]
 public class DbConfig
 {
-    public DbConfig(IServiceCollection services, IConfiguration config)
+    public DbConfig(IServiceCollection services, IConfiguration configuration)
     {
-        var cfg = config.Get<ConfigSettings>()!;
+        var cfg = configuration.Get<ConfigSettings>()!;
         var slowCommandLoggingThreshold = cfg.AppSettings.SlowCommandLoggingThreshold;
         var mainDb = cfg.Connections.RelationalDb["Default"];
         var slaveDb = cfg.Connections.RelationalDb["Slave"];

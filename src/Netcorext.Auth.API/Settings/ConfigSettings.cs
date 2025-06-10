@@ -20,7 +20,9 @@ public class ConfigSettings : Config<AppSettings>
 public class AppSettings
 {
     public RegisterConfig? RegisterConfig { get; set; }
-    public long SlowCommandLoggingThreshold { get; set; } = 1000;
+    public int SlowCommandLoggingThreshold { get; set; } = 100;
+    public int ServiceSlowCommandLoggingThreshold { get; set; } = 150;
+    public int HttpSlowCommandLoggingThreshold { get; set; } = 150;
     public string RequestIdHeaderName { get; set; } = "X-Request-Id";
     public string[] RequestIdFromHeaderNames { get; set; } = { "X-Request-Id" };
     public bool EnableAspNetCoreLogger { get; set; }

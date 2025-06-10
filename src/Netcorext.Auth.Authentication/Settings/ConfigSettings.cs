@@ -47,7 +47,9 @@ public class AppSettings
     public bool ValidationPassUserId { get; set; }
     public int CacheTokenExpires { get; set; } = 30 * 60 * 1000;
     public bool UseNativeStatus { get; set; }
-    public long SlowCommandLoggingThreshold { get; set; } = 1000;
+    public int SlowCommandLoggingThreshold { get; set; } = 100;
+    public int ServiceSlowCommandLoggingThreshold { get; set; } = 150;
+    public int HttpSlowCommandLoggingThreshold { get; set; } = 150;
     public int? WorkerTaskLimit { get; set; } = ConfigSettings.DEFAULT_WORKER_TASK_LIMIT;
     public int? RetryLimit { get; set; } = 3;
     public string RequestIdHeaderName { get; set; } = "X-Request-Id";

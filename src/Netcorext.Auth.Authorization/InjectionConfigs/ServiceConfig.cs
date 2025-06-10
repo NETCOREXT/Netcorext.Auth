@@ -7,8 +7,10 @@ namespace Netcorext.Auth.Authorization.InjectionConfigs;
 [Injection]
 public class ServiceConfig
 {
-    public ServiceConfig(IServiceCollection services)
+    public ServiceConfig(IServiceCollection services, IConfiguration configuration)
     {
+        var cfg = configuration.Get<ConfigSettings>()!;
+
         services.AddMediator()
                 .AddRedisQueuing((provider, options) =>
                                  {
@@ -16,7 +18,10 @@ public class ServiceConfig
                                      options.ConnectionString = cfg.Connections.Redis.GetDefault().Connection;
                                  })
                 .AddLoggingPipeline()
-                .AddPerformancePipeline()
+                .AddPerformancePipeline((_, options) =>
+                                        {
+                                            options.SlowCommandTimes = cfg.AppSettings.ServiceSlowCommandLoggingThreshold;
+                                        })
                 .AddValidatorPipeline();
     }
 }

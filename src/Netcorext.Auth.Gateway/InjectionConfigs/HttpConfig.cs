@@ -13,6 +13,9 @@ public class HttpConfig
         services.AddContextState();
         services.AddHttpClient("")
                 .AddRequestId(cfg.AppSettings.RequestIdHeaderName, cfg.AppSettings.RequestIdFromHeaderNames)
-                .AddLoggingHttpMessage();
+                .AddLoggingHttpMessage((_, options) =>
+                                       {
+                                           options.SlowRequestLoggingThreshold = cfg.AppSettings.HttpSlowCommandLoggingThreshold;
+                                       });
     }
 }
