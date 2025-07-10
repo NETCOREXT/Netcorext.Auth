@@ -17,6 +17,7 @@ public class ConfigSettings : Config<AppSettings>
 public class AppSettings
 {
     public string LockPrefixKey { get; set; } = Assembly.GetEntryAssembly()!.GetName().Name!.ToLower();
+    public int SlowConnectionLoggingThreshold { get; set; } = 100;
     public int SlowCommandLoggingThreshold { get; set; } = 100;
     public int ServiceSlowCommandLoggingThreshold { get; set; } = 150;
     public int HttpSlowCommandLoggingThreshold { get; set; } = 150;

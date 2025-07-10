@@ -15,6 +15,7 @@ public class DbConfig
     public DbConfig(IServiceCollection services, IConfiguration configuration)
     {
         var cfg = configuration.Get<ConfigSettings>()!;
+        var slowConnectionLoggingThreshold = cfg.AppSettings.SlowConnectionLoggingThreshold;
         var slowCommandLoggingThreshold = cfg.AppSettings.SlowCommandLoggingThreshold;
         var mainDb = cfg.Connections.RelationalDb["Default"];
         var slaveDb = cfg.Connections.RelationalDb["Slave"];
@@ -35,7 +36,7 @@ public class DbConfig
 
                                               if (mainDb.EnableThreadSafetyChecks.HasValue)
                                                   builder.EnableThreadSafetyChecks(mainDb.EnableThreadSafetyChecks.Value);
-                                          }, mainDb.PoolSize, slowCommandLoggingThreshold);
+                                          }, mainDb.PoolSize, slowConnectionLoggingThreshold, slowCommandLoggingThreshold);
 
         services.AddIdentitySlaveDbContextPool((_, builder) =>
                                                {
@@ -52,7 +53,7 @@ public class DbConfig
 
                                                    if (slaveDb.EnableThreadSafetyChecks.HasValue)
                                                        builder.EnableThreadSafetyChecks(slaveDb.EnableThreadSafetyChecks.Value);
-                                               }, slaveDb.PoolSize, slowCommandLoggingThreshold);
+                                               }, slaveDb.PoolSize, slowConnectionLoggingThreshold, slowCommandLoggingThreshold);
 
         services.TryAddSingleton<RedisClient>(provider =>
                                               {

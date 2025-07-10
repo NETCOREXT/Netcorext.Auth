@@ -47,6 +47,7 @@ public class AppSettings
     public bool ValidationPassUserId { get; set; }
     public int CacheTokenExpires { get; set; } = 30 * 60 * 1000;
     public bool UseNativeStatus { get; set; }
+    public int SlowConnectionLoggingThreshold { get; set; } = 100;
     public int SlowCommandLoggingThreshold { get; set; } = 100;
     public int ServiceSlowCommandLoggingThreshold { get; set; } = 150;
     public int HttpSlowCommandLoggingThreshold { get; set; } = 150;
