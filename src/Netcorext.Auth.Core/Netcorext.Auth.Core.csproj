@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="Netcorext.Configuration.Abstractions" Version="1.0.1-dev.*" />
-    <PackageReference Include="Netcorext.EntityFramework.UserIdentityPattern.AspNetCore" Version="1.0.0-dev.*" />
+    <PackageReference Include="Netcorext.EntityFramework.UserIdentityPattern.AspNetCore" Version="1.0.1-dev.*" />
   </ItemGroup>
 
   <ItemGroup>
