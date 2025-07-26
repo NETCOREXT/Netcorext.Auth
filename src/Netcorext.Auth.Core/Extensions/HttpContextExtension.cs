@@ -9,7 +9,7 @@ namespace Netcorext.Auth.Extensions;
 
 public static class HttpContextExtension
 {
-    private static readonly string[] DefaultIpHeaderName = { "Cf-Connecting-Ip", "X-Origin-Forwarded-For", "X-Forwarded-For", "X-Real-Ip" };
+    private static readonly string[] DefaultIpHeaderName = { "Cf-Connecting-Ip", "X-Client-Ip", "X-Origin-Forwarded-For", "X-Forwarded-For", "X-Real-Ip" };
     private static readonly Regex RegexIp = new(@"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}[^,]*)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex RegexLastPath = new(@"/(\w+)$", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
