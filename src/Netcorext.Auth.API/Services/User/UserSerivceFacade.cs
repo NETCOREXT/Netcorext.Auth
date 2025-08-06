@@ -87,6 +87,32 @@ public class UserServiceFacade : UserService.UserServiceBase
     }
 
     [Permission("AUTH", PermissionType.Read)]
+    public override async Task<GetUserFunctionMixRoleRequest.Types.Result> GetUserFunctionMixRole(GetUserFunctionMixRoleRequest request, ServerCallContext context)
+    {
+        var req = request.Adapt<GetUserFunctionMixRole>();
+        var rep = await _dispatcher.SendAsync(req);
+
+        var result = new GetUserFunctionMixRoleRequest.Types.Result
+                     {
+                         Code = rep.Code,
+                         Message = rep.Message,
+                         Content = new GetUserFunctionMixRoleRequest.Types.Result.Types.UserFunctionMixRole
+                                   {
+                                       Roles = { rep.Content?.Roles.Select(t => t) },
+                                       UserFunctions =
+                                       {
+                                           rep.Content?.UserFunctions.Select(t => new GetUserFunctionMixRoleRequest.Types.Result.Types.UserFunction
+                                                                                  {
+                                                                                      Functions = { t.Functions.Select(t2 => t2.Adapt<GetUserFunctionMixRoleRequest.Types.Result.Types.Function>()) }
+                                                                                  })
+                                       }
+                                   }
+                     };
+
+        return result;
+    }
+
+    [Permission("AUTH", PermissionType.Read)]
     public override async Task<GetUserRoleRequest.Types.Result> GetUserRole(GetUserRoleRequest request, ServerCallContext context)
     {
         var req = request.Adapt<GetUserRole>();
