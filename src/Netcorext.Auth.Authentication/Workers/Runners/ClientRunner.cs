@@ -50,10 +50,9 @@ internal class ClientRunner : IWorkerRunner<AuthWorker>
 
         return;
 
-        async void Handler(string s, object o)
+        void Handler(string s, object o)
         {
-            await UpdateClientAsync(o.ToString(), cancellationToken);
-            await BlockClientAsync(o.ToString(), cancellationToken);
+            Task.WhenAll(UpdateClientAsync(o.ToString(), cancellationToken), BlockClientAsync(o.ToString(), cancellationToken));
         }
     }
 
@@ -122,9 +121,9 @@ internal class ClientRunner : IWorkerRunner<AuthWorker>
             var reqIds = ids == null ? null : _serializer.Deserialize<long[]>(ids);
 
             var result = await dispatcher.SendAsync(new GetBlockedClient
-                                       {
-                                           Ids = reqIds
-                                       }, cancellationToken);
+                                                    {
+                                                        Ids = reqIds
+                                                    }, cancellationToken);
 
             var cacheBlockedClient = _cache.Get<HashSet<long>>(ConfigSettings.CACHE_BLOCKED_CLIENT) ?? new HashSet<long>();
 

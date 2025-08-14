@@ -52,9 +52,9 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
 
         return;
 
-        async void Handler(string s, object o)
+        void Handler(string s, object o)
         {
-            await UpdateRouteAsync(o.ToString(), cancellationToken);
+            _ = UpdateRouteAsync(o.ToString(), cancellationToken);
         }
     }
 
@@ -134,7 +134,22 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
                                                                                        Address = gatewayUrl
                                                                                    }
                                                                                }
-                                                                           }
+                                                                           },
+                                                            HealthCheck = new HealthCheckConfig
+                                                                          {
+                                                                              Active = new ActiveHealthCheckConfig
+                                                                                       {
+                                                                                           Enabled = true,
+                                                                                           Interval = TimeSpan.FromMilliseconds(_config.AppSettings.HealthCheckInterval),
+                                                                                           Timeout = TimeSpan.FromMilliseconds(_config.AppSettings.HealthCheckTimeout),
+                                                                                           Path = _config.AppSettings.HealthCheckPath
+                                                                                       },
+                                                                              Passive = new PassiveHealthCheckConfig
+                                                                                        {
+                                                                                            Enabled = true,
+                                                                                            ReactivationPeriod = TimeSpan.FromSeconds(_config.AppSettings.HealthCheckReactivationPeriod)
+                                                                                        }
+                                                                          }
                                                         })
                                            .ToArray();
 

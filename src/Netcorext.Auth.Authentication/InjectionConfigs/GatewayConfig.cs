@@ -13,7 +13,12 @@ public class GatewayConfig
 
         var gatewayConfig = configuration.GetSection("ReverseProxy");
 
-        var proxyBuilder = services.AddReverseProxy();
+        var proxyBuilder = services.AddReverseProxy()
+                                   .ConfigureHttpClient((_, handler) =>
+                                                        {
+                                                            handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(cfg.AppSettings.PooledConnectionLifetime);
+                                                            handler.ConnectTimeout = TimeSpan.FromMilliseconds(cfg.AppSettings.ConnectTimeout);
+                                                        });
 
         if (gatewayConfig.Exists())
             proxyBuilder.LoadFromConfig(gatewayConfig);

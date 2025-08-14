@@ -52,10 +52,9 @@ internal class UserRunner : IWorkerRunner<AuthWorker>
 
         return;
 
-        async void Handler(string s, object o)
+        void Handler(string s, object o)
         {
-            await UpdateUserAsync(o.ToString(), cancellationToken);
-            await BlockUserAsync(o.ToString(), cancellationToken);
+            Task.WhenAll(UpdateUserAsync(o.ToString(), cancellationToken), BlockUserAsync(o.ToString(), cancellationToken));
         }
     }
 

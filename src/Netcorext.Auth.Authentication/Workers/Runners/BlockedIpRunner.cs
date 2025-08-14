@@ -47,9 +47,9 @@ internal class BlockedIpRunner : IWorkerRunner<AuthWorker>
 
         return;
 
-        async void Handler(string s, object o)
+        void Handler(string s, object o)
         {
-            await UpdateBlockedIpAsync(o.ToString(), cancellationToken);
+            _ = UpdateBlockedIpAsync(o.ToString(), cancellationToken);
         }
     }
 

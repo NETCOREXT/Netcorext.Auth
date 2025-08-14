@@ -38,9 +38,9 @@ internal class TokenRunner : IWorkerRunner<AuthWorker>
 
         return Task.CompletedTask;
 
-        async void Handler(string s, object o)
+        void Handler(string s, object o)
         {
-            await UpdateTokenAsync(o.ToString(), cancellationToken);
+            _ = UpdateTokenAsync(o.ToString(), cancellationToken);
         }
     }
 

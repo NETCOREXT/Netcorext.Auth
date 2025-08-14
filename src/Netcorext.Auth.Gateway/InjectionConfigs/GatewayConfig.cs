@@ -1,3 +1,4 @@
+using Netcorext.Auth.Gateway.Settings;
 using Yarp.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.Transforms;
 
@@ -8,11 +9,17 @@ public class GatewayConfig
 {
     public GatewayConfig(IServiceCollection services, IConfiguration configuration)
     {
+        var cfg = configuration.Get<ConfigSettings>()!;
         var requestIdHeaderName = configuration.GetValue<string>("AppSettings:RequestIdHeaderName");
 
         services.AddCors();
 
         services.AddReverseProxy()
+                .ConfigureHttpClient((_, handler) =>
+                                     {
+                                         handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(cfg.AppSettings.PooledConnectionLifetime);
+                                         handler.ConnectTimeout = TimeSpan.FromMilliseconds(cfg.AppSettings.ConnectTimeout);
+                                     })
                 .LoadFromMemory(Array.Empty<RouteConfig>(), Array.Empty<ClusterConfig>())
                 .AddTransforms(builder =>
                                {

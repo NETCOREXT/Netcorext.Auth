@@ -22,6 +22,12 @@ public class AppSettings
     public int ServiceSlowCommandLoggingThreshold { get; set; } = 150;
     public int HttpSlowCommandLoggingThreshold { get; set; } = 150;
     public int? WorkerTaskLimit { get; set; } = ConfigSettings.DEFAULT_WORKER_TASK_LIMIT;
+    public int PooledConnectionLifetime { get; set; } = 5 * 60 * 1000;  // 5 minutes
+    public int ConnectTimeout { get; set; } = 15 * 1000;                // 15 seconds
+    public int HealthCheckInterval { get; set; } = 10 * 1000;           // 10 seconds
+    public int HealthCheckTimeout { get; set; } = 5 * 1000;             // 5 seconds
+    public int HealthCheckReactivationPeriod { get; set; } = 10 * 1000; // 10 seconds
+    public string HealthCheckPath { get; set; } = "/Healthz";
     public int? RetryLimit { get; set; } = 3;
     public string RequestIdHeaderName { get; set; } = "X-Request-Id";
     public string[] RequestIdFromHeaderNames { get; set; } = { "X-Request-Id" };

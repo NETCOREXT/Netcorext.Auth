@@ -48,9 +48,9 @@ internal class RoleRunner : IWorkerRunner<AuthWorker>
 
         return;
 
-        async void Handler(string s, object o)
+        void Handler(string s, object o)
         {
-            await UpdateRoleAsync(o.ToString(), cancellationToken);
+            _ = UpdateRoleAsync(o.ToString(), cancellationToken);
         }
     }
 

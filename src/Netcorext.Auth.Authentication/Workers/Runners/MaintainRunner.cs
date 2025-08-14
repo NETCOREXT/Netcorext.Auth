@@ -46,9 +46,9 @@ internal class MaintainRunner : IWorkerRunner<AuthWorker>
 
         return;
 
-        async void Handler(string s, object o)
+        void Handler(string s, object o)
         {
-            await UpdateMaintainAsync(o.ToString(), cancellationToken);
+            _ = UpdateMaintainAsync(o.ToString(), cancellationToken);
         }
     }
 
