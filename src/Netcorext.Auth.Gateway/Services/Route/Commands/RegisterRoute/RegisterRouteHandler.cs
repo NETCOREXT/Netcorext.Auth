@@ -42,7 +42,7 @@ public class RegisterRouteHandler : IRequestHandler<RegisterRoute, Result>
         {
             try
             {
-                if (!await _redis.HSetNxAsync(_config.AppSettings.LockPrefixKey, group.Name.ToUpper(), Array.Empty<byte>()))
+                if (!await _redis.SetNxAsync(_config.AppSettings.LockPrefixKey + ":" + group.Name.ToUpper(), Array.Empty<byte>()))
                     continue;
 
                 var entGroup = ds.Include(t => t.Routes)
@@ -141,7 +141,7 @@ public class RegisterRouteHandler : IRequestHandler<RegisterRoute, Result>
             }
             finally
             {
-                await _redis.HDelAsync(_config.AppSettings.LockPrefixKey, group.Name.ToUpper());
+                await _redis.ExpireAsync(_config.AppSettings.LockPrefixKey + ":" + group.Name.ToUpper(), TimeSpan.FromMilliseconds(_config.AppSettings.LockPrefixKeyExpires));
             }
         }
 
