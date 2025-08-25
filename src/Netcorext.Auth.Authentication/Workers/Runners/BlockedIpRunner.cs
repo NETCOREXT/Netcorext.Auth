@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Netcorext.Auth.Authentication.Services.Blocked.Queries;
 using Netcorext.Auth.Authentication.Settings;
 using Netcorext.Contracts;
+using Netcorext.Extensions.Commons;
 using Netcorext.Extensions.Linq;
 using Netcorext.Mediator;
 using Netcorext.Serialization;
@@ -64,32 +65,29 @@ internal class BlockedIpRunner : IWorkerRunner<AuthWorker>
             using var scope = _serviceProvider.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-            var reqIds = ids == null ? null : _serializer.Deserialize<long[]>(ids);
-
-            var result = await dispatcher.SendAsync(new GetBlockedIp
-                                                    {
-                                                        Ids = reqIds
-                                                    }, cancellationToken);
-
-            if (result.Content == null || result.Code != Result.Success) return;
+            var reqIds = ids.IsEmpty() ? null : _serializer.Deserialize<long[]>(ids);
 
             var cacheBlockedIp = _cache.Get<Dictionary<long, Services.Blocked.Queries.Models.BlockedIp>>(ConfigSettings.CACHE_BLOCKED_IP) ?? new Dictionary<long, Services.Blocked.Queries.Models.BlockedIp>();
 
-            if (reqIds != null && reqIds.Any())
+            if (reqIds.IsEmpty())
+                cacheBlockedIp.Clear();
+            else
+                reqIds.ForEach(t => cacheBlockedIp.Remove(t));
+
+            var result = await dispatcher.SendAsync(new GetBlockedIp
+                                                    {
+                                                        Ids = reqIds.IsEmpty() ? null : reqIds
+                                                    }, cancellationToken);
+
+            if (result.Code == Result.Success && !result.Content.IsEmpty())
             {
-                var rules = cacheBlockedIp.Where(t => reqIds.Contains(t.Value.Id))
-                                          .ToArray();
+                result.Content.ForEach(t =>
+                                       {
+                                           if (cacheBlockedIp.TryAdd(t.Id, t))
+                                               return;
 
-                rules.ForEach(t => cacheBlockedIp.Remove(t.Key));
-            }
-
-            foreach (var i in result.Content)
-            {
-                var id = i.Id;
-
-                if (cacheBlockedIp.TryAdd(id, i)) continue;
-
-                cacheBlockedIp[id] = i;
+                                           cacheBlockedIp[t.Id] = t;
+                                       });
             }
 
             _cache.Set(ConfigSettings.CACHE_BLOCKED_IP, cacheBlockedIp, _cacheEntryOptions);

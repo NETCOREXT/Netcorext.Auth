@@ -5,6 +5,7 @@ using Netcorext.Auth.Authentication.Services.Permission.Queries;
 using Netcorext.Auth.Authentication.Services.User.Queries;
 using Netcorext.Auth.Authentication.Settings;
 using Netcorext.Contracts;
+using Netcorext.Extensions.Commons;
 using Netcorext.Extensions.Linq;
 using Netcorext.Mediator;
 using Netcorext.Serialization;
@@ -69,11 +70,11 @@ internal class UserRunner : IWorkerRunner<AuthWorker>
             using var scope = _serviceProvider.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-            var reqIds = ids == null ? null : _serializer.Deserialize<long[]>(ids);
+            var reqIds = ids.IsEmpty() ? null : _serializer.Deserialize<long[]>(ids);
 
             var result = await dispatcher.SendAsync(new GetUserPermissionCondition
                                                     {
-                                                        Ids = reqIds
+                                                        Ids = reqIds.IsEmpty() ? null : reqIds
                                                     }, cancellationToken);
 
             if (result.Content == null || result.Code != Result.Success) return;
@@ -120,29 +121,26 @@ internal class UserRunner : IWorkerRunner<AuthWorker>
             using var scope = _serviceProvider.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-            var reqIds = ids == null ? null : _serializer.Deserialize<long[]>(ids);
+            var reqIds = ids.IsEmpty() ? null : _serializer.Deserialize<long[]>(ids);
 
             var result = await dispatcher.SendAsync(new GetBlockedUser
                                                     {
-                                                        Ids = reqIds
+                                                        Ids = reqIds.IsEmpty() ? null : reqIds
                                                     }, cancellationToken);
 
             var cacheBlockedUser = _cache.Get<HashSet<long>>(ConfigSettings.CACHE_BLOCKED_USER) ?? new HashSet<long>();
 
-            if (reqIds == null || !reqIds.Any())
-            {
+            if (reqIds.IsEmpty())
                 cacheBlockedUser.Clear();
-
-                if (result.Content != null && result.Content.Any())
-                    result.Content.ForEach(t => cacheBlockedUser.Add(t));
-            }
-            else if (result.Content == null || !result.Content.Any())
-            {
-                cacheBlockedUser.RemoveWhere(t => reqIds.Contains(t));
-            }
             else
+                reqIds.ForEach(t => cacheBlockedUser.Remove(t));
+
+            if (result.Code == Result.Success && !result.Content.IsEmpty())
             {
-                result.Content.ForEach(t => cacheBlockedUser.Add(t));
+                result.Content.ForEach(t =>
+                                       {
+                                           cacheBlockedUser.Add(t);
+                                       });
             }
 
             _cache.Set(ConfigSettings.CACHE_BLOCKED_USER, cacheBlockedUser, _cacheEntryOptions);

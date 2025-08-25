@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Netcorext.Contracts;
 using Netcorext.EntityFramework.UserIdentityPattern;
+using Netcorext.Extensions.Commons;
 using Netcorext.Extensions.Linq;
 using Netcorext.Mediator;
 using Yarp.ReverseProxy.Forwarder;
@@ -21,12 +22,10 @@ public class GetRouteHandler : IRequestHandler<GetRoute, Result<IEnumerable<Mode
     {
         var ds = _context.Set<Domain.Entities.RouteGroup>();
 
-        Expression<Func<Domain.Entities.RouteGroup, bool>> predicate = p => request.GroupIds == null;
+        Expression<Func<Domain.Entities.RouteGroup, bool>> predicate = p => true;
 
-        if (request.GroupIds != null && request.GroupIds.Any())
-        {
-            predicate = request.GroupIds.Aggregate(predicate, (current, id) => current.Or(p => p.Id == id));
-        }
+        if (!request.GroupIds.IsEmpty())
+            predicate = predicate.And(t => request.GroupIds.Contains(t.Id));
 
         var queryEntities = ds.Where(predicate)
                               .AsNoTracking();
@@ -61,10 +60,9 @@ public class GetRouteHandler : IRequestHandler<GetRoute, Result<IEnumerable<Mode
                                                                                                                                      Value = t3.Value
                                                                                                                                  })
                                                                                    })
-                                                });
+                                                })
+                                   .ToArray();
 
-        return Task.FromResult(!content.Any()
-                                   ? Result<IEnumerable<Models.RouteGroup>>.Success
-                                   : Result<IEnumerable<Models.RouteGroup>>.Success.Clone(content.ToArray()));
+        return Task.FromResult(Result<IEnumerable<Models.RouteGroup>>.Success.Clone(content.ToArray()));
     }
 }

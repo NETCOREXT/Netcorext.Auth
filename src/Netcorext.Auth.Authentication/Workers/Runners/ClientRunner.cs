@@ -3,6 +3,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Netcorext.Auth.Authentication.Services.Client.Queries;
 using Netcorext.Auth.Authentication.Settings;
+using Netcorext.Contracts;
+using Netcorext.Extensions.Commons;
 using Netcorext.Extensions.Linq;
 using Netcorext.Mediator;
 using Netcorext.Serialization;
@@ -67,31 +69,29 @@ internal class ClientRunner : IWorkerRunner<AuthWorker>
             using var scope = _serviceProvider.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-            var reqIds = ids == null ? null : _serializer.Deserialize<long[]>(ids);
-
-            var result = await dispatcher.SendAsync(new GetClient
-                                                    {
-                                                        Ids = reqIds
-                                                    }, cancellationToken);
+            var reqIds = ids.IsEmpty() ? null : _serializer.Deserialize<long[]>(ids);
 
             var cacheClient = _cache.Get<Dictionary<long, Netcorext.Auth.Authentication.Services.Client.Queries.Models.Client>>(ConfigSettings.CACHE_CLIENT) ?? new Dictionary<long, Netcorext.Auth.Authentication.Services.Client.Queries.Models.Client>();
 
-            if (reqIds == null || !reqIds.Any())
-            {
+            if (reqIds.IsEmpty())
                 cacheClient.Clear();
-
-                if (result.Content != null && result.Content.Any())
-                    result.Content.ForEach(t => cacheClient.TryAdd(t.Id, t));
-            }
-            else if (result.Content == null || !result.Content.Any())
-            {
-                reqIds.ForEach(t => cacheClient.Remove(t));
-            }
             else
+                reqIds.ForEach(t => cacheClient.Remove(t));
+
+            var result = await dispatcher.SendAsync(new GetClient
+                                                    {
+                                                        Ids = reqIds.IsEmpty() ? null : reqIds
+                                                    }, cancellationToken);
+
+            if (result.Code == Result.Success && !result.Content.IsEmpty())
             {
-                var diffIds = reqIds.Except(result.Content.Select(t => t.Id)).ToArray();
-                diffIds.ForEach(t => cacheClient.Remove(t));
-                result.Content.ForEach(t => cacheClient.Add(t.Id, t));
+                result.Content.ForEach(t =>
+                                       {
+                                           if (cacheClient.TryAdd(t.Id, t))
+                                               return;
+
+                                           cacheClient[t.Id] = t;
+                                       });
             }
 
             _cache.Set(ConfigSettings.CACHE_CLIENT, cacheClient, _cacheEntryOptions);

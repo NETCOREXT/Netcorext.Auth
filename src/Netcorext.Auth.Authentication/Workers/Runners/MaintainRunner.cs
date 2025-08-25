@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Netcorext.Auth.Authentication.Services.Maintenance.Queries;
 using Netcorext.Auth.Authentication.Settings;
 using Netcorext.Contracts;
+using Netcorext.Extensions.Commons;
 using Netcorext.Mediator;
 using Netcorext.Serialization;
 using Netcorext.Worker;
@@ -64,7 +65,7 @@ internal class MaintainRunner : IWorkerRunner<AuthWorker>
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
             var result = await dispatcher.SendAsync(new GetMaintain(), cancellationToken);
 
-            if (result.Content == null || result.Code != Result.Success) return;
+            if (result.Content.IsEmpty() || result.Code != Result.Success) return;
 
             _cache.Set($"{ConfigSettings.CACHE_MAINTAIN}", result.Content, _cacheEntryOptions);
         }

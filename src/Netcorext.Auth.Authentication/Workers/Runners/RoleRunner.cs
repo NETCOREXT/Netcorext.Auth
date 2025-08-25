@@ -65,18 +65,22 @@ internal class RoleRunner : IWorkerRunner<AuthWorker>
             using var scope = _serviceProvider.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-            var reqIds = ids == null ? null : _serializer.Deserialize<long[]>(ids);
+            var reqIds = ids.IsEmpty() ? null : _serializer.Deserialize<long[]>(ids);
 
             var cacheRolePermission = _cache.Get<Dictionary<string, Services.Permission.Queries.Models.RolePermission>>(ConfigSettings.CACHE_ROLE_PERMISSION) ?? new Dictionary<string, Services.Permission.Queries.Models.RolePermission>();
             var cacheRolePermissionCondition = _cache.Get<Dictionary<long, Services.Permission.Queries.Models.RolePermissionCondition>>(ConfigSettings.CACHE_ROLE_PERMISSION_CONDITION) ?? new Dictionary<long, Services.Permission.Queries.Models.RolePermissionCondition>();
 
-            if (reqIds != null && reqIds.Any())
+            if (reqIds.IsEmpty())
+            {
+                cacheRolePermission.Clear();
+                cacheRolePermissionCondition.Clear();
+            }
+            else
             {
                 var permissions = cacheRolePermission.Where(t => reqIds.Contains(t.Value.RoleId))
                                                      .ToArray();
 
                 permissions.ForEach(t => cacheRolePermission.Remove(t.Key));
-
 
                 var conditions = cacheRolePermissionCondition.Where(t => reqIds.Contains(t.Value.RoleId))
                                                              .ToArray();
@@ -86,22 +90,20 @@ internal class RoleRunner : IWorkerRunner<AuthWorker>
 
             var result = await dispatcher.SendAsync(new GetRolePermission
                                                     {
-                                                        Ids = reqIds
+                                                        Ids = reqIds.IsEmpty() ? null : reqIds
                                                     }, cancellationToken);
 
             if (result.Code == Result.Success && !result.Content.IsEmpty())
             {
-                foreach (var i in result.Content)
-                {
-                    var id = $"{i.Id}-${i.PermissionId}";
+                result.Content.ForEach(t =>
+                                       {
+                                           var id = $"{t.RoleId}:{t.PermissionId}";
 
-                    if (cacheRolePermission.TryAdd(id, i)) continue;
+                                           if (cacheRolePermission.TryAdd(id, t))
+                                               return;
 
-                    cacheRolePermission[id] = i;
-                }
-
-                _cache.Set(ConfigSettings.CACHE_ROLE_PERMISSION, cacheRolePermission, _cacheEntryOptions);
-                _cache.Set(ConfigSettings.CACHE_ROLE_PERMISSION_CHECK_KEY, cacheRolePermission.Count);
+                                           cacheRolePermission[id] = t;
+                                       });
             }
 
             var resultCondition = await dispatcher.SendAsync(new GetRolePermissionCondition
@@ -111,17 +113,18 @@ internal class RoleRunner : IWorkerRunner<AuthWorker>
 
             if (resultCondition.Code == Result.Success && !resultCondition.Content.IsEmpty())
             {
-                foreach (var i in resultCondition.Content)
-                {
-                    var id = i.Id;
+                resultCondition.Content.ForEach(t =>
+                                                {
+                                                    if (cacheRolePermissionCondition.TryAdd(t.Id, t))
+                                                        return;
 
-                    if (cacheRolePermissionCondition.TryAdd(id, i)) continue;
-
-                    cacheRolePermissionCondition[id] = i;
-                }
-
-                _cache.Set(ConfigSettings.CACHE_ROLE_PERMISSION_CONDITION, cacheRolePermissionCondition, _cacheEntryOptions);
+                                                    cacheRolePermissionCondition[t.Id] = t;
+                                                });
             }
+
+            _cache.Set(ConfigSettings.CACHE_ROLE_PERMISSION, cacheRolePermission, _cacheEntryOptions);
+            _cache.Set(ConfigSettings.CACHE_ROLE_PERMISSION_CHECK_KEY, cacheRolePermission.Count);
+            _cache.Set(ConfigSettings.CACHE_ROLE_PERMISSION_CONDITION, cacheRolePermissionCondition, _cacheEntryOptions);
         }
         catch (Exception e)
         {

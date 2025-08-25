@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Netcorext.Auth.Authentication.Services.Permission.Queries;
 using Netcorext.Auth.Authentication.Settings;
 using Netcorext.Contracts;
+using Netcorext.Extensions.Commons;
 using Netcorext.Extensions.Linq;
 using Netcorext.Mediator;
 using Netcorext.Serialization;
@@ -64,18 +65,15 @@ internal class PermissionRunner : IWorkerRunner<AuthWorker>
             using var scope = _serviceProvider.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-            var reqIds = ids == null ? null : _serializer.Deserialize<long[]>(ids);
-
-            var result = await dispatcher.SendAsync(new GetPermission
-                                                    {
-                                                        Ids = reqIds
-                                                    }, cancellationToken);
-
-            if (result.Content == null || result.Code != Result.Success) return;
+            var reqIds = ids.IsEmpty() ? null : _serializer.Deserialize<long[]>(ids);
 
             var cachePermissionRule = _cache.Get<Dictionary<long, Services.Permission.Queries.Models.PermissionRule>>(ConfigSettings.CACHE_PERMISSION_RULE) ?? new Dictionary<long, Services.Permission.Queries.Models.PermissionRule>();
 
-            if (reqIds != null && reqIds.Any())
+            if (reqIds.IsEmpty())
+            {
+                cachePermissionRule.Clear();
+            }
+            else
             {
                 var rules = cachePermissionRule.Where(t => reqIds.Contains(t.Value.PermissionId))
                                                .ToArray();
@@ -83,13 +81,20 @@ internal class PermissionRunner : IWorkerRunner<AuthWorker>
                 rules.ForEach(t => cachePermissionRule.Remove(t.Key));
             }
 
-            foreach (var i in result.Content)
+            var result = await dispatcher.SendAsync(new GetPermission
+                                                    {
+                                                        Ids = reqIds.IsEmpty() ? null : reqIds
+                                                    }, cancellationToken);
+
+            if (result.Code == Result.Success && !result.Content.IsEmpty())
             {
-                var id = i.Id;
+                result.Content.ForEach(t =>
+                                       {
+                                           if (cachePermissionRule.TryAdd(t.Id, t))
+                                               return;
 
-                if (cachePermissionRule.TryAdd(id, i)) continue;
-
-                cachePermissionRule[id] = i;
+                                           cachePermissionRule[t.Id] = t;
+                                       });
             }
 
             _cache.Set(ConfigSettings.CACHE_PERMISSION_RULE, cachePermissionRule, _cacheEntryOptions);

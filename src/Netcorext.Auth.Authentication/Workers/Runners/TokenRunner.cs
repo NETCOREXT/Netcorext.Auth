@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Netcorext.Auth.Authentication.Settings;
 using Netcorext.Contracts;
+using Netcorext.Extensions.Commons;
 using Netcorext.Serialization;
 using Netcorext.Worker;
 
@@ -56,7 +57,7 @@ internal class TokenRunner : IWorkerRunner<AuthWorker>
 
             var tokens = _serializer.Deserialize<string[]>(data);
 
-            if (tokens == null || !tokens.Any()) return;
+            if (tokens.IsEmpty()) return;
 
             foreach (var token in tokens)
             {

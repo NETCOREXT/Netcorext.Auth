@@ -10,35 +10,40 @@ public class GatewayConfig
     public GatewayConfig(IServiceCollection services, IConfiguration configuration)
     {
         var cfg = configuration.Get<ConfigSettings>()!;
-        var requestIdHeaderName = configuration.GetValue<string>("AppSettings:RequestIdHeaderName");
 
-        services.AddCors();
+        var gatewayConfig = configuration.GetSection("ReverseProxy");
 
-        services.AddReverseProxy()
-                .ConfigureHttpClient((_, handler) =>
-                                     {
-                                         handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(cfg.AppSettings.PooledConnectionLifetime);
-                                         handler.ConnectTimeout = TimeSpan.FromMilliseconds(cfg.AppSettings.ConnectTimeout);
-                                     })
-                .LoadFromMemory(Array.Empty<RouteConfig>(), Array.Empty<ClusterConfig>())
-                .AddTransforms(builder =>
-                               {
-                                   builder.AddXForwarded(ForwardedTransformActions.Off);
-                                   builder.AddXForwardedFor(action: ForwardedTransformActions.Append);
-                                   builder.AddResponseTransform(ctx =>
-                                                                {
-                                                                    if (ctx.ProxyResponse == null || string.IsNullOrWhiteSpace(requestIdHeaderName) || !ctx.ProxyResponse.Headers.TryGetValues(requestIdHeaderName, out var requestIds))
+        var proxyBuilder = services.AddReverseProxy()
+                                   .ConfigureHttpClient((_, handler) =>
+                                                        {
+                                                            handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(cfg.AppSettings.PooledConnectionLifetime);
+                                                            handler.ConnectTimeout = TimeSpan.FromMilliseconds(cfg.AppSettings.ConnectTimeout);
+                                                        });
+
+        if (gatewayConfig.Exists())
+            proxyBuilder.LoadFromConfig(gatewayConfig);
+        else
+            proxyBuilder.LoadFromMemory(Array.Empty<RouteConfig>(), Array.Empty<ClusterConfig>());
+
+        proxyBuilder.AddTransforms(builder =>
+                                   {
+                                       builder.AddXForwarded(ForwardedTransformActions.Off);
+                                       builder.AddXForwardedFor(action: ForwardedTransformActions.Append);
+
+                                       builder.AddResponseTransform(ctx =>
+                                                                    {
+                                                                        if (ctx.ProxyResponse == null || !ctx.ProxyResponse.Headers.TryGetValues(cfg.AppSettings.RequestIdHeaderName, out var requestIds))
+                                                                            return ValueTask.CompletedTask;
+
+                                                                        var requestIdHeader = string.Join(',', requestIds);
+
+                                                                        if (string.IsNullOrWhiteSpace(requestIdHeader))
+                                                                            return ValueTask.CompletedTask;
+
+                                                                        ctx.HttpContext.Response.Headers[cfg.AppSettings.RequestIdHeaderName] = requestIdHeader;
+
                                                                         return ValueTask.CompletedTask;
-
-                                                                    var requestIdHeader = string.Join(',', requestIds);
-
-                                                                    if (string.IsNullOrWhiteSpace(requestIdHeader))
-                                                                        return ValueTask.CompletedTask;
-
-                                                                    ctx.HttpContext.Response.Headers[requestIdHeaderName] = requestIdHeader;
-
-                                                                    return ValueTask.CompletedTask;
-                                                                });
-                               });
+                                                                    });
+                                   });
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Netcorext.Auth.Gateway.Services.Route.Queries;
 using Netcorext.Auth.Gateway.Settings;
 using Netcorext.Contracts;
+using Netcorext.Extensions.Commons;
 using Netcorext.Extensions.Linq;
 using Netcorext.Mediator;
 using Netcorext.Serialization;
@@ -21,11 +22,12 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
     private readonly ISerializer _serializer;
     private readonly KeyLocker _locker;
+    private readonly IConfiguration _configuration;
     private readonly InMemoryConfigProvider _memoryConfigProvider;
     private readonly ConfigSettings _config;
     private readonly ILogger<RouteRunner> _logger;
 
-    public RouteRunner(IServiceProvider serviceProvider, RedisClient redis, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, ISerializer serializer, KeyLocker locker, IProxyConfigProvider proxyConfigProvider, IOptions<ConfigSettings> config, ILogger<RouteRunner> logger)
+    public RouteRunner(IServiceProvider serviceProvider, RedisClient redis, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, ISerializer serializer, KeyLocker locker, IProxyConfigProvider proxyConfigProvider, IOptions<ConfigSettings> config, IConfiguration configuration, ILogger<RouteRunner> logger)
     {
         _serviceProvider = serviceProvider;
         _redis = redis;
@@ -33,6 +35,7 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
         _cacheEntryOptions = cacheEntryOptions;
         _serializer = serializer;
         _locker = locker;
+        _configuration = configuration;
         _memoryConfigProvider = (InMemoryConfigProvider)proxyConfigProvider;
         _config = config.Value;
         _logger = logger;
@@ -60,56 +63,46 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
     {
         try
         {
+            await _locker.WaitAsync(nameof(UpdateRouteAsync));
+
             _logger.LogInformation(nameof(UpdateRouteAsync));
+
+            var gatewayConfig = _configuration.GetSection("ReverseProxy");
+
+            if (gatewayConfig.Exists())
+            {
+                _cache.Set(ConfigSettings.CACHE_ROUTE_CHECK_KEY, 9999);
+
+                return;
+            }
 
             using var scope = _serviceProvider.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-            var reqIds = ids == null ? null : _serializer.Deserialize<long[]>(ids);
-
-            var request = new GetRoute
-                          {
-                              GroupIds = reqIds
-                          };
-
-            var result = await dispatcher.SendAsync(request, cancellationToken);
-
-            await _locker.WaitAsync(nameof(UpdateRouteAsync));
-
-            if (result.Content == null || result.Code != Result.Success)
-                return;
+            var reqIds = ids.IsEmpty() ? null : _serializer.Deserialize<long[]>(ids);
 
             var cacheRouteGroups = _cache.Get<Dictionary<long, Services.Route.Queries.Models.RouteGroup>>(ConfigSettings.CACHE_ROUTE) ?? new Dictionary<long, Services.Route.Queries.Models.RouteGroup>();
 
-            if (reqIds != null && reqIds.Any())
+            if (reqIds.IsEmpty())
+                cacheRouteGroups.Clear();
+            else
+                reqIds.ForEach(t => cacheRouteGroups.Remove(t));
+
+            var result = await dispatcher.SendAsync(new GetRoute
+                                                    {
+                                                        GroupIds = reqIds.IsEmpty() ? null : reqIds
+                                                    }, cancellationToken);
+
+            if (result.Code == Result.Success && !result.Content.IsEmpty())
             {
-                var repIds = result.Content.Select(t => t.Id);
+                result.Content.ForEach(t =>
+                                       {
+                                           if (cacheRouteGroups.TryAdd(t.Id, t))
+                                               return;
 
-                var diffIds = reqIds.Except(repIds);
-
-                diffIds.ForEach(t => cacheRouteGroups.Remove(t));
+                                           cacheRouteGroups[t.Id] = t;
+                                       });
             }
-
-            foreach (var group in result.Content)
-            {
-                if (cacheRouteGroups.TryAdd(group.Id, group))
-                    continue;
-
-                cacheRouteGroups[group.Id] = group;
-            }
-
-            if (request.GroupIds != null)
-            {
-                var diffIds = request.GroupIds.ExceptBoth(result.Content.Select(t => t.Id));
-
-                foreach (var id in diffIds.First)
-                {
-                    cacheRouteGroups.Remove(id);
-                }
-            }
-
-            _cache.Set(ConfigSettings.CACHE_ROUTE, cacheRouteGroups, _cacheEntryOptions);
-            _cache.Set(ConfigSettings.CACHE_ROUTE_CHECK_KEY, cacheRouteGroups.Count);
 
             var clusters = cacheRouteGroups.Values
                                            .Select(t => new ClusterConfig
@@ -162,6 +155,9 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
                                          .ToArray();
 
             _memoryConfigProvider.Update(routes, clusters);
+
+            _cache.Set(ConfigSettings.CACHE_ROUTE, cacheRouteGroups, _cacheEntryOptions);
+            _cache.Set(ConfigSettings.CACHE_ROUTE_CHECK_KEY, cacheRouteGroups.Count);
         }
         catch (Exception e)
         {

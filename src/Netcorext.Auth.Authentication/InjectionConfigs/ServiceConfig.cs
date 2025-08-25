@@ -12,9 +12,8 @@ public class ServiceConfig
         var cfg = configuration.Get<ConfigSettings>()!;
 
         services.AddMediator()
-                .AddRedisQueuing((provider, options) =>
+                .AddRedisQueuing((_, options) =>
                                  {
-                                     var cfg = provider.GetRequiredService<IOptions<ConfigSettings>>().Value;
                                      options.ConnectionString = cfg.Connections.Redis.GetDefault().Connection;
                                  })
                 .AddLoggingPipeline()
