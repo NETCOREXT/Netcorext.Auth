@@ -45,11 +45,11 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
     {
         _logger.LogDebug("{Message}", nameof(RouteRunner));
 
+        await UpdateRouteAsync(null, cancellationToken);
+
         _subscriber?.Dispose();
 
         _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_ROUTE_CHANGE_EVENT], Handler);
-
-        await UpdateRouteAsync(null, cancellationToken);
 
         return;
 
@@ -61,9 +61,11 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
 
     private async Task UpdateRouteAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(UpdateRouteAsync) : nameof(UpdateRouteAsync) + "/" + string.Join('-', ids);
+
         try
         {
-            await _locker.WaitAsync(nameof(UpdateRouteAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(UpdateRouteAsync));
 
@@ -165,7 +167,7 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(UpdateRouteAsync));
+            _locker.Release(lockerKey);
         }
     }
 
