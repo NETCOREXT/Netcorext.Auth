@@ -41,15 +41,14 @@ internal class UserRunner : IWorkerRunner<AuthWorker>
     {
         _logger.LogDebug("{Message}", nameof(UserRunner));
 
-        _subscriber?.Dispose();
+        await UpdateUserAsync(null, cancellationToken);
+        await BlockUserAsync(null, cancellationToken);
 
+        _subscriber?.Dispose();
         _subscriber = _redis.Subscribe(new[]
                                        {
                                            _config.Queues[ConfigSettings.QUEUES_USER_CHANGE_EVENT]
                                        }, Handler);
-
-        await UpdateUserAsync(null, cancellationToken);
-        await BlockUserAsync(null, cancellationToken);
 
         return;
 
@@ -61,9 +60,11 @@ internal class UserRunner : IWorkerRunner<AuthWorker>
 
     private async Task UpdateUserAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(UpdateUserAsync) : nameof(UpdateUserAsync) + "/" + ids;
+
         try
         {
-            await _locker.WaitAsync(nameof(UpdateUserAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(UpdateUserAsync));
 
@@ -106,15 +107,17 @@ internal class UserRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(UpdateUserAsync));
+            _locker.Release(lockerKey);
         }
     }
 
     private async Task BlockUserAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(BlockUserAsync) : nameof(BlockUserAsync) + "/" + ids;
+
         try
         {
-            await _locker.WaitAsync(nameof(BlockUserAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(BlockUserAsync));
 
@@ -151,7 +154,7 @@ internal class UserRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(BlockUserAsync));
+            _locker.Release(lockerKey);
         }
     }
 

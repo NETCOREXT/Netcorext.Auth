@@ -34,7 +34,6 @@ internal class TokenRunner : IWorkerRunner<AuthWorker>
         _logger.LogDebug("{Message}", nameof(TokenRunner));
 
         _subscriber?.Dispose();
-
         _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_TOKEN_REVOKE_EVENT], Handler);
 
         return Task.CompletedTask;
@@ -45,17 +44,19 @@ internal class TokenRunner : IWorkerRunner<AuthWorker>
         }
     }
 
-    private async Task UpdateTokenAsync(string? data, CancellationToken cancellationToken = default)
+    private async Task UpdateTokenAsync(string? ids, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(data)) return;
+        if (string.IsNullOrWhiteSpace(ids)) return;
+
+        var lockerKey = ids.IsEmpty() ? nameof(UpdateTokenAsync) : nameof(UpdateTokenAsync) + "/" + ids;
 
         try
         {
-            await _locker.WaitAsync(nameof(UpdateTokenAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(UpdateTokenAsync));
 
-            var tokens = _serializer.Deserialize<string[]>(data);
+            var tokens = _serializer.Deserialize<string[]>(ids);
 
             if (tokens.IsEmpty()) return;
 
@@ -70,7 +71,7 @@ internal class TokenRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(UpdateTokenAsync));
+            _locker.Release(lockerKey);
         }
     }
 

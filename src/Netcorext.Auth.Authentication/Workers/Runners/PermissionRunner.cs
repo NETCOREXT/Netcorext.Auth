@@ -40,11 +40,10 @@ internal class PermissionRunner : IWorkerRunner<AuthWorker>
     {
         _logger.LogDebug("{Message}", nameof(RoleRunner));
 
-        _subscriber?.Dispose();
-
-        _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_PERMISSION_CHANGE_EVENT], Handler);
-
         await UpdatePermissionAsync(null, cancellationToken);
+
+        _subscriber?.Dispose();
+        _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_PERMISSION_CHANGE_EVENT], Handler);
 
         return;
 
@@ -56,9 +55,11 @@ internal class PermissionRunner : IWorkerRunner<AuthWorker>
 
     private async Task UpdatePermissionAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(UpdatePermissionAsync) : nameof(UpdatePermissionAsync) + "/" + ids;
+
         try
         {
-            await _locker.WaitAsync(nameof(UpdatePermissionAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(UpdatePermissionAsync));
 
@@ -106,7 +107,7 @@ internal class PermissionRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(UpdatePermissionAsync));
+            _locker.Release(lockerKey);
         }
     }
 

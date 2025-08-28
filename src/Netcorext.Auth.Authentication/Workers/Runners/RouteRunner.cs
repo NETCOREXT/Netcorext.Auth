@@ -60,7 +60,7 @@ internal class RouteRunner : IWorkerRunner<AuthWorker>
 
     private async Task UpdateRouteAsync(string? ids, CancellationToken cancellationToken = default)
     {
-        var lockerKey = ids.IsEmpty() ? nameof(UpdateRouteAsync) : nameof(UpdateRouteAsync) + "/" + string.Join('-', ids);
+        var lockerKey = ids.IsEmpty() ? nameof(UpdateRouteAsync) : nameof(UpdateRouteAsync) + "/" + ids;
 
         try
         {

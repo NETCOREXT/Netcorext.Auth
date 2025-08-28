@@ -39,11 +39,10 @@ internal class MaintainRunner : IWorkerRunner<AuthWorker>
     {
         _logger.LogDebug("{Message}", nameof(MaintainRunner));
 
-        _subscriber?.Dispose();
-
-        _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_MAINTAIN_CHANGE_EVENT], Handler);
-
         await UpdateMaintainAsync(null, cancellationToken);
+
+        _subscriber?.Dispose();
+        _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_MAINTAIN_CHANGE_EVENT], Handler);
 
         return;
 
@@ -53,11 +52,13 @@ internal class MaintainRunner : IWorkerRunner<AuthWorker>
         }
     }
 
-    private async Task UpdateMaintainAsync(string? data, CancellationToken cancellationToken = default)
+    private async Task UpdateMaintainAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(UpdateMaintainAsync) : nameof(UpdateMaintainAsync) + "/" + ids;
+
         try
         {
-            await _locker.WaitAsync(nameof(UpdateMaintainAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(UpdateMaintainAsync));
 
@@ -75,7 +76,7 @@ internal class MaintainRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(UpdateMaintainAsync));
+            _locker.Release(lockerKey);
         }
     }
 

@@ -40,11 +40,10 @@ internal class BlockedIpRunner : IWorkerRunner<AuthWorker>
     {
         _logger.LogDebug("{Message}", nameof(BlockedIpRunner));
 
-        _subscriber?.Dispose();
-
-        _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_BLOCKED_IP_CHANGE_EVENT], Handler);
-
         await UpdateBlockedIpAsync(null, cancellationToken);
+
+        _subscriber?.Dispose();
+        _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_BLOCKED_IP_CHANGE_EVENT], Handler);
 
         return;
 
@@ -56,9 +55,11 @@ internal class BlockedIpRunner : IWorkerRunner<AuthWorker>
 
     private async Task UpdateBlockedIpAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(UpdateBlockedIpAsync) : nameof(UpdateBlockedIpAsync) + "/" + ids;
+
         try
         {
-            await _locker.WaitAsync(nameof(UpdateBlockedIpAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(UpdateBlockedIpAsync));
 
@@ -98,7 +99,7 @@ internal class BlockedIpRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(UpdateBlockedIpAsync));
+            _locker.Release(lockerKey);
         }
     }
 

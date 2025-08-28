@@ -40,11 +40,10 @@ internal class RoleRunner : IWorkerRunner<AuthWorker>
     {
         _logger.LogDebug("{Message}", nameof(RoleRunner));
 
-        _subscriber?.Dispose();
-
-        _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_ROLE_CHANGE_EVENT], Handler);
-
         await UpdateRoleAsync(null, cancellationToken);
+
+        _subscriber?.Dispose();
+        _subscriber = _redis.Subscribe(_config.Queues[ConfigSettings.QUEUES_ROLE_CHANGE_EVENT], Handler);
 
         return;
 
@@ -56,9 +55,11 @@ internal class RoleRunner : IWorkerRunner<AuthWorker>
 
     private async Task UpdateRoleAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(UpdateRoleAsync) : nameof(UpdateRoleAsync) + "/" + ids;
+
         try
         {
-            await _locker.WaitAsync(nameof(UpdateRoleAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(UpdateRoleAsync));
 
@@ -132,7 +133,7 @@ internal class RoleRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(UpdateRoleAsync));
+            _locker.Release(lockerKey);
         }
     }
 

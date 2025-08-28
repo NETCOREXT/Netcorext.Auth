@@ -40,15 +40,14 @@ internal class ClientRunner : IWorkerRunner<AuthWorker>
     {
         _logger.LogDebug("{Message}", nameof(ClientRunner));
 
-        _subscriber?.Dispose();
+        await UpdateClientAsync(null, cancellationToken);
+        await BlockClientAsync(null, cancellationToken);
 
+        _subscriber?.Dispose();
         _subscriber = _redis.Subscribe(new[]
                                        {
                                            _config.Queues[ConfigSettings.QUEUES_CLIENT_CHANGE_EVENT]
                                        }, Handler);
-
-        await UpdateClientAsync(null, cancellationToken);
-        await BlockClientAsync(null, cancellationToken);
 
         return;
 
@@ -60,9 +59,11 @@ internal class ClientRunner : IWorkerRunner<AuthWorker>
 
     private async Task UpdateClientAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(UpdateClientAsync) : nameof(UpdateClientAsync) + "/" + ids;
+
         try
         {
-            await _locker.WaitAsync(nameof(UpdateClientAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(UpdateClientAsync));
 
@@ -103,15 +104,17 @@ internal class ClientRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(BlockClientAsync));
+            _locker.Release(lockerKey);
         }
     }
 
     private async Task BlockClientAsync(string? ids, CancellationToken cancellationToken = default)
     {
+        var lockerKey = ids.IsEmpty() ? nameof(BlockClientAsync) : nameof(BlockClientAsync) + "/" + ids;
+
         try
         {
-            await _locker.WaitAsync(nameof(BlockClientAsync));
+            await _locker.WaitAsync(lockerKey);
 
             _logger.LogInformation(nameof(BlockClientAsync));
 
@@ -151,7 +154,7 @@ internal class ClientRunner : IWorkerRunner<AuthWorker>
         }
         finally
         {
-            _locker.Release(nameof(BlockClientAsync));
+            _locker.Release(lockerKey);
         }
     }
 
