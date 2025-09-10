@@ -1,4 +1,3 @@
-using System.Reflection;
 using Netcorext.Auth.Extensions.AspNetCore.Settings;
 using Netcorext.Configuration;
 
