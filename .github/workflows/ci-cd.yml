@@ -181,7 +181,6 @@ jobs:
             --build-arg APP="${{ steps.envs.outputs.app }}" \
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
 
-
   Build-Authorization:
     name: "Build Netcorext.Auth.Authorization"
     needs: Detect
@@ -266,7 +265,6 @@ jobs:
             --build-arg APP="${{ steps.envs.outputs.app }}" \
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
 
-
   Build-Abstractions:
     name: "Build Netcorext.Auth.Abstractions"
     needs: Detect
@@ -341,3 +339,33 @@ jobs:
           artifact: ${{ needs.Build-Protos.outputs.artifact }}
           nuget-api-url: ${{ vars.NUGET_API_URL }}
           nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+
+  Tag:
+    name: "Tag Version"
+    needs:
+      - Build
+      - Build-Authentication
+      - Build-Authorization
+      - Build-Gateway
+    if: (needs.Build.result == 'success' || needs.Build-Authentication.result == 'success' || needs.Build-Authorization.result == 'success' || needs.Build-Gateway.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create Tag
+        run: |
+          VERSION=""
+          
+          if [ ! -z "${{ needs.Build.outputs.tag }}" ]; then
+            VERSION="${{ needs.Build.outputs.tag }}"
+          elif [ ! -z "${{ needs.Build-Authentication.outputs.tag }}" ]; then
+            VERSION="${{ needs.Build-Authentication.outputs.tag }}"
+          elif [ ! -z "${{ needs.Build-Authorization.outputs.tag }}" ]; then
+            VERSION="${{ needs.Build-Authorization.outputs.tag }}"
+          elif [ ! -z "${{ needs.Build-Gateway.outputs.tag }}" ]; then
+            VERSION="${{ needs.Build-Gateway.outputs.tag }}"
+          fi
+
+          git tag "$VERSION"
+          git push origin "$VERSION"
