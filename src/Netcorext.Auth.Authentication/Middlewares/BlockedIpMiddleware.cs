@@ -46,7 +46,7 @@ public class BlockedIpMiddleware
 
         if (cacheBlockedIp.Any(t => t.Value.BeginRange >= ipNumber && t.Value.EndRange <= ipNumber))
         {
-            _logger.LogWarning("Forbidden, The IP '{IP}' is blocked", ip);
+            _logger.LogWarning("Forbidden, The IP {IP} is blocked", ip);
 
             await context.ForbiddenAsync(_config.AppSettings.UseNativeStatus, "403008");
         }
