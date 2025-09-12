@@ -56,7 +56,7 @@ internal class PermissionMiddleware
 
         if (string.IsNullOrWhiteSpace(method))
         {
-            _logger.LogWarning("Forbidden, No method found for path {Path}", path);
+            _logger.LogWarning("Forbidden, No method found for {Method} {Path}", method, path);
 
             await context.ForbiddenAsync(_config.AppSettings.UseNativeStatus);
 
@@ -84,7 +84,7 @@ internal class PermissionMiddleware
 
         if (string.IsNullOrWhiteSpace(functionId))
         {
-            _logger.LogWarning("Forbidden, No function found for path {Path}", path);
+            _logger.LogWarning("Forbidden, No function found for {Method} {Path}", method, path);
 
             await context.ForbiddenAsync(_config.AppSettings.UseNativeStatus);
 
@@ -127,7 +127,7 @@ internal class PermissionMiddleware
 
             if (headerValue.IsEmpty())
             {
-                _logger.LogWarning("Unauthorized, header 'Authorization' value is empty");
+                _logger.LogWarning("Unauthorized, header 'Authorization' value is empty, for {Method} {Path}", method, path);
 
                 await context.UnauthorizedAsync(_config.AppSettings.UseNativeStatus);
 
@@ -135,7 +135,7 @@ internal class PermissionMiddleware
             }
         }
 
-        _logger.LogWarning("Forbidden");
+        _logger.LogWarning("Forbidden, The user {UserId} with role {Role} has no permission to access {Method} {Path}", claimName, role, method, path);
 
         await context.ForbiddenAsync(_config.AppSettings.UseNativeStatus);
     }
