@@ -63,7 +63,7 @@ public static class IpHelper
 
         if (cidrIpParts.Length != 4) return default;
 
-        var cidrIpBytes = cidrIpParts.Reverse().Select(byte.Parse).ToArray();
+        var cidrIpBytes = Reverse(cidrIpParts).Select(byte.Parse).ToArray();
 
         var cidrIpLong = BitConverter.ToInt32(cidrIpBytes, 0);
 
@@ -110,5 +110,11 @@ public static class IpHelper
         var maskIp = new IPAddress(maskBytes);
 
         return (beginIp, endIp, maskIp);
+    }
+
+    private static T[] Reverse<T>(T[] input)
+    {
+        Array.Reverse(input);
+        return input;
     }
 }
