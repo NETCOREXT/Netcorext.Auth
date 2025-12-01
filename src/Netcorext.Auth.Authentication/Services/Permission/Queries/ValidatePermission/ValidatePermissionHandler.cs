@@ -40,7 +40,7 @@ public class ValidatePermissionHandler : IRequestHandler<ValidatePermission, Res
         if (request.RoleId != null && request.RoleId.Any())
             roleIds = request.RoleId;
 
-        if (request.UserId.HasValue)
+        if (request.ValidationPassUserId && request.UserId.HasValue)
         {
             if (_config.AppSettings.Owner?.Any(t => t == request.UserId) ?? false)
                 return Result.Success;

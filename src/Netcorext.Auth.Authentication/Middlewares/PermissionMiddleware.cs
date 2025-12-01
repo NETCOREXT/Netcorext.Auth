@@ -114,7 +114,7 @@ internal class PermissionMiddleware
                              });
         }
 
-        if (await IsValidAsync(dispatcher, _config.AppSettings.ValidationPassUserId && rt == "1" ? id : null, role, functionId, method, rv.Values.ToArray()))
+        if (await IsValidAsync(dispatcher, rt == "1" ? id : null, role, functionId, method, _config.AppSettings.ValidationPassUserId, rv.Values.ToArray()))
         {
             await _next(context);
 
@@ -140,7 +140,7 @@ internal class PermissionMiddleware
         await context.ForbiddenAsync(_config.AppSettings.UseNativeStatus);
     }
 
-    private static async Task<bool> IsValidAsync(IDispatcher dispatcher, long? userId, string? role, string functionId, string httpMethod, IEnumerable<ValidatePermission.PermissionCondition> permissionConditions)
+    private static async Task<bool> IsValidAsync(IDispatcher dispatcher, long? userId, string? role, string functionId, string httpMethod, bool validationPassUserId, IEnumerable<ValidatePermission.PermissionCondition> permissionConditions)
     {
         var roleIds = role?.Split(" ", StringSplitOptions.RemoveEmptyEntries)
                            .Where(t => !t.IsEmpty() && long.TryParse(t, out var _))
@@ -156,7 +156,8 @@ internal class PermissionMiddleware
                                                     RoleId = roleIds,
                                                     FunctionId = functionId,
                                                     PermissionType = httpMethod.ToPermissionType(),
-                                                    PermissionConditions = permissionConditions.ToArray()
+                                                    PermissionConditions = permissionConditions.ToArray(),
+                                                    ValidationPassUserId = validationPassUserId
                                                 });
 
         return result == Result.Success;
