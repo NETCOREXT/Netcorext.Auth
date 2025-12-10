@@ -62,6 +62,7 @@ public class AppSettings
     public int? RetryLimit { get; set; } = 3;
     public string RequestIdHeaderName { get; set; } = "X-Request-Id";
     public string[] RequestIdFromHeaderNames { get; set; } = { "X-Request-Id" };
+    public string[]? RequestHeaderRemovePrefixes { get; set; } = { "CF-" };
     public bool EnableAspNetCoreLogger { get; set; }
     public bool EnableTraffic { get; set; }
     public Dictionary<string, int>? CheckCacheKeys { get; set; }

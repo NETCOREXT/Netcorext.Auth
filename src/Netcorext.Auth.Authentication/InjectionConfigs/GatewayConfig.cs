@@ -1,4 +1,5 @@
 using Netcorext.Auth.Authentication.Settings;
+using Netcorext.Extensions.Commons;
 using Yarp.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.Transforms;
 
@@ -29,7 +30,22 @@ public class GatewayConfig
                                    {
                                        builder.AddXForwarded(ForwardedTransformActions.Off);
                                        builder.AddXForwardedFor(action: ForwardedTransformActions.Append);
+                                       builder.AddRequestTransform(ctx =>
+                                                                   {
+                                                                       if (cfg.AppSettings.RequestHeaderRemovePrefixes.IsEmpty())
+                                                                           return ValueTask.CompletedTask;
 
+                                                                       foreach (var header in ctx.HttpContext.Request.Headers)
+                                                                       {
+                                                                           if (!cfg.AppSettings.RequestHeaderRemovePrefixes.Any(t => header.Key.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
+                                                                               continue;
+
+                                                                           ctx.ProxyRequest.Headers.Remove(header.Key);
+                                                                           ctx.ProxyRequest.Content?.Headers.Remove(header.Key);
+                                                                       }
+
+                                                                       return ValueTask.CompletedTask;
+                                                                   });
                                        builder.AddResponseTransform(ctx =>
                                                                     {
                                                                         if (ctx.ProxyResponse == null || !ctx.ProxyResponse.Headers.TryGetValues(cfg.AppSettings.RequestIdHeaderName, out var requestIds))
