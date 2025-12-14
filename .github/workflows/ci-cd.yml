@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - alpha
+      - beta
       - dev
       - stg
 
@@ -18,14 +20,8 @@ jobs:
   Detect:
     runs-on: ubuntu-latest
     outputs:
-      app: ${{ steps.detect.outputs.app }}
-      app-authentication: ${{ steps.detect.outputs.app-authentication }}
-      app-authorization: ${{ steps.detect.outputs.app-authorization }}
-      app-gateway: ${{ steps.detect.outputs.app-gateway }}
-
-      app-abstractions: ${{ steps.detect.outputs.app-abstractions }}
-      app-extensions: ${{ steps.detect.outputs.app-extensions }}
-      app-protos: ${{ steps.detect.outputs.app-protos }}
+      docker-matrix: ${{ steps.detect.outputs.docker-matrix }}
+      nuget-matrix: ${{ steps.detect.outputs.nuget-matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,84 +29,86 @@ jobs:
       - name: Detect Change
         id: detect
         run: |
-          APP="Netcorext.Auth.API"
-          APP_AUTHENTICATION="Netcorext.Auth.Authentication"
-          APP_AUTHORIZATION="Netcorext.Auth.Authorization"
-          APP_GATEWAY="Netcorext.Auth.Gateway"
           APP_CORE="Netcorext.Auth.Core"
-          
-          APP_ABSTRACTIONS="Netcorext.Auth.Abstractions"
-          APP_EXTENSIONS="Netcorext.Auth.Extensions.AspNetCore"
-          APP_PROTOS="Netcorext.Auth.Protobufs"
-          
 
-          CHANGE_FILES=`git diff --no-commit-id --name-only HEAD^`
+          # Docker 應用程式清單
+          DOCKER_APPS=(
+            "Netcorext.Auth.API"
+            "Netcorext.Auth.Authentication"
+            "Netcorext.Auth.Authorization"
+            "Netcorext.Auth.Gateway"
+          )
 
-          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP}|${APP_CORE}" || true`
-          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
-            echo "No changes in ${APP}"
-            APP=""
-          fi
+          # NuGet 套件清單
+          NUGET_APPS=(
+            "Netcorext.Auth.Abstractions"
+            "Netcorext.Auth.Extensions.AspNetCore"
+            "Netcorext.Auth.Protobufs"
+          )
 
-          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_AUTHENTICATION}|${APP_CORE}" || true`
-          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
-            echo "No changes in ${APP_AUTHENTICATION}"
-            APP_AUTHENTICATION=""
-          fi
-
-          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_AUTHORIZATION}|${APP_CORE}" || true`
-          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
-            echo "No changes in ${APP_AUTHORIZATION}"
-            APP_AUTHORIZATION=""
-          fi
-          
-          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_GATEWAY}|${APP_CORE}" || true`
-          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
-            echo "No changes in ${APP_GATEWAY}"
-            APP_GATEWAY=""
-          fi
-          
-          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_ABSTRACTIONS}" || true`
-          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
-            echo "No changes in ${APP_ABSTRACTIONS}"
-            APP_ABSTRACTIONS=""
-          fi
-          
-          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_EXTENSIONS}" || true`
-          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
-            echo "No changes in ${APP_EXTENSIONS}"
-            APP_EXTENSIONS=""
-          fi
-          
-          CHANGED=`echo "$CHANGE_FILES" | grep -Em 1 "${APP_PROTOS}" || true`
-          if [ -z "$CHANGED" ] && [ "${{ inputs.force }}" != true ]; then
-            echo "No changes in ${APP_PROTOS}"
-            APP_PROTOS=""
+          # 對 push event，直接用 diff-tree 看當前 commit 的變更
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "Using git diff-tree for push event"
+            CHANGE_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD)
+          else
+            # workflow_dispatch 或其他 event 用 diff
+            echo "Using git diff for non-push event"
+            CHANGE_FILES=$(git diff --name-only HEAD^ HEAD)
           fi
 
-          echo "app=${APP}" >> $GITHUB_OUTPUT
-          echo "app-authentication=${APP_AUTHENTICATION}" >> $GITHUB_OUTPUT
-          echo "app-authorization=${APP_AUTHORIZATION}" >> $GITHUB_OUTPUT
-          echo "app-gateway=${APP_GATEWAY}" >> $GITHUB_OUTPUT
-          
-          echo "app-abstractions=${APP_ABSTRACTIONS}" >> $GITHUB_OUTPUT
-          echo "app-extensions=${APP_EXTENSIONS}" >> $GITHUB_OUTPUT
-          echo "app-protos=${APP_PROTOS}" >> $GITHUB_OUTPUT
+          echo "Changed files:"
+          echo "$CHANGE_FILES"
 
-  Build:
-    name: "Build Netcorext.Auth.API"
+          # 建構 Docker 應用程式的 matrix
+          DOCKER_MATRIX=()
+          for app in "${DOCKER_APPS[@]}"; do
+            CHANGED=$(echo "$CHANGE_FILES" | grep -Em 1 "${app}|${APP_CORE}" || true)
+            if [ -n "$CHANGED" ] || [ "${{ inputs.force }}" = true ]; then
+              echo "Changes detected in ${app}"
+              DOCKER_MATRIX+=("{\"app\":\"$app\"}")
+            else
+              echo "No changes in ${app}"
+            fi
+          done
+
+          # 建構 NuGet 套件的 matrix
+          NUGET_MATRIX=()
+          for app in "${NUGET_APPS[@]}"; do
+            CHANGED=$(echo "$CHANGE_FILES" | grep -Em 1 "${app}" || true)
+            if [ -n "$CHANGED" ] || [ "${{ inputs.force }}" = true ]; then
+              echo "Changes detected in ${app}"
+              NUGET_MATRIX+=("{\"app\":\"$app\"}")
+            else
+              echo "No changes in ${app}"
+            fi
+          done
+
+          # 輸出 matrix JSON
+          if [ ${#DOCKER_MATRIX[@]} -eq 0 ]; then
+            echo "docker-matrix=[]" >> "$GITHUB_OUTPUT"
+          else
+            DOCKER_JSON=$(printf '%s\n' "${DOCKER_MATRIX[@]}" | jq -sc '.')
+            echo "docker-matrix=$DOCKER_JSON" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ ${#NUGET_MATRIX[@]} -eq 0 ]; then
+            echo "nuget-matrix=[]" >> "$GITHUB_OUTPUT"
+          else
+            NUGET_JSON=$(printf '%s\n' "${NUGET_MATRIX[@]}" | jq -sc '.')
+            echo "nuget-matrix=$NUGET_JSON" >> "$GITHUB_OUTPUT"
+          fi
+
+  Build-Docker:
+    name: "Build ${{ matrix.app }}"
     needs: Detect
-    if: needs.Detect.outputs.app != ''
+    if: needs.Detect.outputs.docker-matrix != '[]'
     runs-on: ubuntu-latest
-    env:
-      app: ${{ needs.Detect.outputs.app }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.Detect.outputs.docker-matrix) }}
     outputs:
-      app: ${{ steps.envs.outputs.app }}
-      branch: ${{ steps.envs.outputs.branch }}
-      image: ${{ steps.envs.outputs.image }}
       tag: ${{ steps.envs.outputs.tag }}
-      tag-hash: ${{ steps.envs.outputs.tag-hash }}
-      tag-latest: ${{ steps.envs.outputs.tag-latest }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -118,7 +116,7 @@ jobs:
       - id: envs
         uses: netcorext/dotnet-version-action@dev
         with:
-          app: ${{ env.app }}
+          app: ${{ matrix.app }}
           image-prefix: ${{ vars.IMAGE_PREFIX }}
       - uses: netcorext/dotnet-dockerfile-action@dev
         with:
@@ -139,137 +137,15 @@ jobs:
             --build-arg APP="${{ steps.envs.outputs.app }}" \
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
 
-  Build-Authentication:
-    name: "Build Netcorext.Auth.Authentication"
+  Build-NuGet:
+    name: "Build ${{ matrix.app }}"
     needs: Detect
-    if: needs.Detect.outputs.app-authentication != ''
+    if: needs.Detect.outputs.nuget-matrix != '[]'
     runs-on: ubuntu-latest
-    env:
-      app: ${{ needs.Detect.outputs.app-authentication }}
-    outputs:
-      app: ${{ steps.envs.outputs.app }}
-      branch: ${{ steps.envs.outputs.branch }}
-      image: ${{ steps.envs.outputs.image }}
-      tag: ${{ steps.envs.outputs.tag }}
-      tag-hash: ${{ steps.envs.outputs.tag-hash }}
-      tag-latest: ${{ steps.envs.outputs.tag-latest }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - id: envs
-        uses: netcorext/dotnet-version-action@dev
-        with:
-          app: ${{ env.app }}
-          image-prefix: ${{ vars.IMAGE_PREFIX }}
-      - uses: netcorext/dotnet-dockerfile-action@dev
-        with:
-          expand-command: apt-get update && apt-get install -y curl
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build Image & Push
-        uses: netcorext/buildx-image-action@dev
-        with:
-          image: ${{ steps.envs.outputs.image-fullName }}
-          tag: ${{ steps.envs.outputs.tag }}
-          tag-hash: ${{ steps.envs.outputs.tag-hash }}
-          tag-latest: ${{ steps.envs.outputs.tag-latest }}
-          build-arg: |-
-            --build-arg APP="${{ steps.envs.outputs.app }}" \
-            --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
-
-  Build-Authorization:
-    name: "Build Netcorext.Auth.Authorization"
-    needs: Detect
-    if: needs.Detect.outputs.app-authorization != ''
-    runs-on: ubuntu-latest
-    env:
-      app: ${{ needs.Detect.outputs.app-authorization }}
-    outputs:
-      app: ${{ steps.envs.outputs.app }}
-      branch: ${{ steps.envs.outputs.branch }}
-      image: ${{ steps.envs.outputs.image }}
-      tag: ${{ steps.envs.outputs.tag }}
-      tag-hash: ${{ steps.envs.outputs.tag-hash }}
-      tag-latest: ${{ steps.envs.outputs.tag-latest }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - id: envs
-        uses: netcorext/dotnet-version-action@dev
-        with:
-          app: ${{ env.app }}
-          image-prefix: ${{ vars.IMAGE_PREFIX }}
-      - uses: netcorext/dotnet-dockerfile-action@dev
-        with:
-          expand-command: apt-get update && apt-get install -y curl
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build Image & Push
-        uses: netcorext/buildx-image-action@dev
-        with:
-          image: ${{ steps.envs.outputs.image-fullName }}
-          tag: ${{ steps.envs.outputs.tag }}
-          tag-hash: ${{ steps.envs.outputs.tag-hash }}
-          tag-latest: ${{ steps.envs.outputs.tag-latest }}
-          build-arg: |-
-            --build-arg APP="${{ steps.envs.outputs.app }}" \
-            --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
-
-  Build-Gateway:
-    name: "Build Netcorext.Auth.Gateway"
-    needs: Detect
-    if: needs.Detect.outputs.app-gateway != ''
-    runs-on: ubuntu-latest
-    env:
-      app: ${{ needs.Detect.outputs.app-gateway }}
-    outputs:
-      app: ${{ steps.envs.outputs.app }}
-      branch: ${{ steps.envs.outputs.branch }}
-      image: ${{ steps.envs.outputs.image }}
-      tag: ${{ steps.envs.outputs.tag }}
-      tag-hash: ${{ steps.envs.outputs.tag-hash }}
-      tag-latest: ${{ steps.envs.outputs.tag-latest }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - id: envs
-        uses: netcorext/dotnet-version-action@dev
-        with:
-          app: ${{ env.app }}
-          image-prefix: ${{ vars.IMAGE_PREFIX }}
-      - uses: netcorext/dotnet-dockerfile-action@dev
-        with:
-          expand-command: apt-get update && apt-get install -y curl
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build Image & Push
-        uses: netcorext/buildx-image-action@dev
-        with:
-          image: ${{ steps.envs.outputs.image-fullName }}
-          tag: ${{ steps.envs.outputs.tag }}
-          tag-hash: ${{ steps.envs.outputs.tag-hash }}
-          tag-latest: ${{ steps.envs.outputs.tag-latest }}
-          build-arg: |-
-            --build-arg APP="${{ steps.envs.outputs.app }}" \
-            --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
-
-  Build-Abstractions:
-    name: "Build Netcorext.Auth.Abstractions"
-    needs: Detect
-    if: needs.Detect.outputs.app-abstractions != ''
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.Detect.outputs.nuget-matrix) }}
     outputs:
       artifact: ${{ steps.build.outputs.artifact }}
     steps:
@@ -277,77 +153,30 @@ jobs:
         name: Build Package
         uses: netcorext/dotnet-build-package-action@dev
         with:
-          app: ${{ needs.Detect.outputs.app-abstractions }}
-  Deploy-Abstractions:
-    name: "Deploy Netcorext.Auth.Abstractions"
-    needs: Build-Abstractions
-    runs-on: ubuntu-latest
-    steps:
-      - uses: netcorext/push-nuget-package-action@dev
-        name: Push Package
-        with:
-          artifact: ${{ needs.Build-Abstractions.outputs.artifact }}
-          nuget-api-url: ${{ vars.NUGET_API_URL }}
-          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+          app: ${{ matrix.app }}
 
-  Build-Extensions:
-    name: "Build Netcorext.Auth.Extensions.AspNetCore"
-    needs: Detect
-    if: needs.Detect.outputs.app-extensions != ''
+  Deploy-NuGet:
+    name: "Deploy ${{ matrix.app }}"
+    needs:
+      - Detect
+      - Build-NuGet
     runs-on: ubuntu-latest
-    outputs:
-      artifact: ${{ steps.build.outputs.artifact }}
-    steps:
-      - id: build
-        name: Build Package
-        uses: netcorext/dotnet-build-package-action@dev
-        with:
-          app: ${{ needs.Detect.outputs.app-extensions }}
-  Deploy-Extensions:
-    name: "Deploy Netcorext.Auth.Extensions.AspNetCore"
-    needs: Build-Extensions
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.Detect.outputs.nuget-matrix) }}
     steps:
       - uses: netcorext/push-nuget-package-action@dev
         name: Push Package
         with:
-          artifact: ${{ needs.Build-Extensions.outputs.artifact }}
-          nuget-api-url: ${{ vars.NUGET_API_URL }}
-          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
-
-  Build-Protos:
-    name: "Build Netcorext.Auth.Protobufs"
-    needs: Detect
-    if: needs.Detect.outputs.app-protos != ''
-    runs-on: ubuntu-latest
-    outputs:
-      artifact: ${{ steps.build.outputs.artifact }}
-    steps:
-      - id: build
-        name: Build Package
-        uses: netcorext/dotnet-build-package-action@dev
-        with:
-          app: ${{ needs.Detect.outputs.app-protos }}
-  Deploy-Protos:
-    name: "Deploy Netcorext.Auth.Protobufs"
-    needs: Build-Protos
-    runs-on: ubuntu-latest
-    steps:
-      - uses: netcorext/push-nuget-package-action@dev
-        name: Push Package
-        with:
-          artifact: ${{ needs.Build-Protos.outputs.artifact }}
+          artifact: ${{ needs.Build-NuGet.outputs.artifact }}
           nuget-api-url: ${{ vars.NUGET_API_URL }}
           nuget-api-key: ${{ secrets.NUGET_API_KEY }}
 
   Tag:
     name: "Tag Version"
-    needs:
-      - Build
-      - Build-Authentication
-      - Build-Authorization
-      - Build-Gateway
-    if: (needs.Build.result == 'success' || needs.Build-Authentication.result == 'success' || needs.Build-Authorization.result == 'success' || needs.Build-Gateway.result == 'success')
+    needs: Build-Docker
+    if: needs.Build-Docker.result == 'success' && needs.Build-Docker.outputs.tag != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -355,16 +184,11 @@ jobs:
           fetch-depth: 0
       - name: Create Tag
         run: |
-          VERSION=""
-          
-          if [ ! -z "${{ needs.Build.outputs.tag }}" ]; then
-            VERSION="${{ needs.Build.outputs.tag }}"
-          elif [ ! -z "${{ needs.Build-Authentication.outputs.tag }}" ]; then
-            VERSION="${{ needs.Build-Authentication.outputs.tag }}"
-          elif [ ! -z "${{ needs.Build-Authorization.outputs.tag }}" ]; then
-            VERSION="${{ needs.Build-Authorization.outputs.tag }}"
-          elif [ ! -z "${{ needs.Build-Gateway.outputs.tag }}" ]; then
-            VERSION="${{ needs.Build-Gateway.outputs.tag }}"
+          VERSION="${{ needs.Build-Docker.outputs.tag }}"
+
+          if [ -z "$VERSION" ]; then
+            echo "No version tag found, skipping"
+            exit 0
           fi
 
           git tag "$VERSION"
