@@ -20,8 +20,8 @@ jobs:
   Detect:
     runs-on: ubuntu-latest
     outputs:
-      docker-matrix: ${{ steps.detect.outputs.docker-matrix }}
-      nuget-matrix: ${{ steps.detect.outputs.nuget-matrix }}
+      app-matrix: ${{ steps.detect.outputs.app-matrix }}
+      pkg-matrix: ${{ steps.detect.outputs.pkg-matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,16 +31,16 @@ jobs:
         run: |
           APP_CORE="Netcorext.Auth.Core"
 
-          # Docker 應用程式清單
-          DOCKER_APPS=(
+          # 應用程式清單
+          APPS=(
             "Netcorext.Auth.API"
             "Netcorext.Auth.Authentication"
             "Netcorext.Auth.Authorization"
             "Netcorext.Auth.Gateway"
           )
 
-          # NuGet 套件清單
-          NUGET_APPS=(
+          # 套件清單
+          PKGS=(
             "Netcorext.Auth.Abstractions"
             "Netcorext.Auth.Extensions.AspNetCore"
             "Netcorext.Auth.Protobufs"
@@ -59,54 +59,54 @@ jobs:
           echo "Changed files:"
           echo "$CHANGE_FILES"
 
-          # 建構 Docker 應用程式的 matrix
-          DOCKER_MATRIX=()
-          for app in "${DOCKER_APPS[@]}"; do
+          # 建構應用程式的 matrix
+          APP_MATRIX=()
+          for app in "${APPS[@]}"; do
             CHANGED=$(echo "$CHANGE_FILES" | grep -Em 1 "${app}|${APP_CORE}" || true)
             if [ -n "$CHANGED" ] || [ "${{ inputs.force }}" = true ]; then
               echo "Changes detected in ${app}"
-              DOCKER_MATRIX+=("{\"app\":\"$app\"}")
+              APP_MATRIX+=("{\"app\":\"$app\"}")
             else
               echo "No changes in ${app}"
             fi
           done
 
-          # 建構 NuGet 套件的 matrix
-          NUGET_MATRIX=()
-          for app in "${NUGET_APPS[@]}"; do
+          # 建構套件的 matrix
+          PKG_MATRIX=()
+          for app in "${PKGS[@]}"; do
             CHANGED=$(echo "$CHANGE_FILES" | grep -Em 1 "${app}" || true)
             if [ -n "$CHANGED" ] || [ "${{ inputs.force }}" = true ]; then
               echo "Changes detected in ${app}"
-              NUGET_MATRIX+=("{\"app\":\"$app\"}")
+              PKG_MATRIX+=("{\"app\":\"$app\"}")
             else
               echo "No changes in ${app}"
             fi
           done
 
           # 輸出 matrix JSON
-          if [ ${#DOCKER_MATRIX[@]} -eq 0 ]; then
-            echo "docker-matrix=[]" >> "$GITHUB_OUTPUT"
+          if [ ${#APP_MATRIX[@]} -eq 0 ]; then
+            echo "app-matrix=[]" >> "$GITHUB_OUTPUT"
           else
-            DOCKER_JSON=$(printf '%s\n' "${DOCKER_MATRIX[@]}" | jq -sc '.')
-            echo "docker-matrix=$DOCKER_JSON" >> "$GITHUB_OUTPUT"
+            APP_JSON=$(printf '%s\n' "${APP_MATRIX[@]}" | jq -sc '.')
+            echo "app-matrix=$APP_JSON" >> "$GITHUB_OUTPUT"
           fi
 
-          if [ ${#NUGET_MATRIX[@]} -eq 0 ]; then
-            echo "nuget-matrix=[]" >> "$GITHUB_OUTPUT"
+          if [ ${#PKG_MATRIX[@]} -eq 0 ]; then
+            echo "pkg-matrix=[]" >> "$GITHUB_OUTPUT"
           else
-            NUGET_JSON=$(printf '%s\n' "${NUGET_MATRIX[@]}" | jq -sc '.')
-            echo "nuget-matrix=$NUGET_JSON" >> "$GITHUB_OUTPUT"
+            PKG_JSON=$(printf '%s\n' "${PKG_MATRIX[@]}" | jq -sc '.')
+            echo "pkg-matrix=$PKG_JSON" >> "$GITHUB_OUTPUT"
           fi
 
-  Build-Docker:
+  Build-App:
     name: "Build ${{ matrix.app }}"
     needs: Detect
-    if: needs.Detect.outputs.docker-matrix != '[]'
+    if: needs.Detect.outputs.app-matrix != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.Detect.outputs.docker-matrix) }}
+        include: ${{ fromJson(needs.Detect.outputs.app-matrix) }}
     outputs:
       tag: ${{ steps.envs.outputs.tag }}
     steps:
@@ -137,15 +137,15 @@ jobs:
             --build-arg APP="${{ steps.envs.outputs.app }}" \
             --build-arg ADDITIONAL_ARGUMENTS="${{ steps.envs.outputs.build-options }}"
 
-  Build-NuGet:
+  Build-Pkg:
     name: "Build ${{ matrix.app }}"
     needs: Detect
-    if: needs.Detect.outputs.nuget-matrix != '[]'
+    if: needs.Detect.outputs.pkg-matrix != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.Detect.outputs.nuget-matrix) }}
+        include: ${{ fromJson(needs.Detect.outputs.pkg-matrix) }}
     outputs:
       artifact: ${{ steps.build.outputs.artifact }}
     steps:
@@ -155,28 +155,28 @@ jobs:
         with:
           app: ${{ matrix.app }}
 
-  Deploy-NuGet:
+  Deploy-Pkg:
     name: "Deploy ${{ matrix.app }}"
     needs:
       - Detect
-      - Build-NuGet
+      - Build-Pkg
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.Detect.outputs.nuget-matrix) }}
+        include: ${{ fromJson(needs.Detect.outputs.pkg-matrix) }}
     steps:
       - uses: netcorext/push-nuget-package-action@dev
         name: Push Package
         with:
-          artifact: ${{ needs.Build-NuGet.outputs.artifact }}
+          artifact: ${{ needs.Build-Pkg.outputs.artifact }}
           nuget-api-url: ${{ vars.NUGET_API_URL }}
           nuget-api-key: ${{ secrets.NUGET_API_KEY }}
 
   Tag:
     name: "Tag Version"
-    needs: Build-Docker
-    if: needs.Build-Docker.result == 'success' && needs.Build-Docker.outputs.tag != ''
+    needs: Build-App
+    if: needs.Build-App.result == 'success' && needs.Build-App.outputs.tag != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -184,7 +184,7 @@ jobs:
           fetch-depth: 0
       - name: Create Tag
         run: |
-          VERSION="${{ needs.Build-Docker.outputs.tag }}"
+          VERSION="${{ needs.Build-App.outputs.tag }}"
 
           if [ -z "$VERSION" ]; then
             echo "No version tag found, skipping"
