@@ -66,7 +66,14 @@ internal class MaintainRunner : IWorkerRunner<AuthWorker>
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
             var result = await dispatcher.SendAsync(new GetMaintain(), cancellationToken);
 
-            if (result.Content.IsEmpty() || result.Code != Result.Success) return;
+            if (result.Code != Result.Success)
+                return;
+
+            if (result.Content.IsEmpty())
+            {
+                _cache.Remove($"{ConfigSettings.CACHE_MAINTAIN}");
+                return;
+            }
 
             _cache.Set($"{ConfigSettings.CACHE_MAINTAIN}", result.Content, _cacheEntryOptions);
         }
