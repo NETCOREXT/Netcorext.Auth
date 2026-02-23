@@ -59,32 +59,74 @@ public static class HttpContextExtension
         return headersString.ToString();
     }
 
-    public static Dictionary<string, string?>? GetUser(this ClaimsPrincipal user)
+    public static Models.User? GetUser(this ClaimsPrincipal user)
     {
         if (!user.Claims.Any())
-            return default;
+            return null;
 
-        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var result = new Models.User();
 
         foreach (var claim in user.Claims)
         {
-            switch (claim.Type)
+
+            switch (claim.Type.ToLower())
             {
                 case ClaimTypes.Name:
-                    result.TryAdd(JwtRegisteredClaimNames.Name, claim.Value);
-
+                    result.Name = claim.Value;
                     break;
                 case ClaimTypes.NameIdentifier:
-                    result.TryAdd(JwtRegisteredClaimNames.NameId, claim.Value);
-
+                    result.NameId = claim.Value;
                     break;
                 case ClaimTypes.Role:
-                    result.TryAdd(GetLastPath(ClaimTypes.Role), claim.Value);
-
+                    result.Role = claim.Value;
                     break;
-                default:
-                    result.TryAdd(claim.Type, claim.Value);
-
+                case "aud":
+                    result.Aud = claim.Value;
+                    break;
+                case "exp":
+                    result.Exp = claim.Value;
+                    break;
+                case "iat":
+                    result.Iat = claim.Value;
+                    break;
+                case "iss":
+                    result.Iss = claim.Value;
+                    break;
+                case "jti":
+                    result.Jti = claim.Value;
+                    break;
+                case "nbf":
+                    result.Nbf = claim.Value;
+                    break;
+                case "sub":
+                    result.Sub = claim.Value;
+                    break;
+                case "labe":
+                    result.Label = claim.Value;
+                    break;
+                case "name":
+                    result.Name = claim.Value;
+                    break;
+                case "nameid":
+                    result.NameId = claim.Value;
+                    break;
+                case "nickname":
+                    result.Nickname = claim.Value;
+                    break;
+                case "role":
+                    result.Role = claim.Value;
+                    break;
+                case "uid":
+                    result.Uid = claim.Value;
+                    break;
+                case "rt":
+                    result.Rt = claim.Value;
+                    break;
+                case "tt":
+                    result.Tt = claim.Value;
+                    break;
+                case "userdata":
+                    result.UserData = claim.Value;
                     break;
             }
         }
@@ -92,12 +134,12 @@ public static class HttpContextExtension
         return result;
     }
 
-    public static Dictionary<string, string?>? GetUserAgent(this IHeaderDictionary headers)
+    public static Models.UserAgent? GetUserAgent(this IHeaderDictionary headers)
     {
         if (string.IsNullOrWhiteSpace(headers.UserAgent))
-            return default;
+            return null;
 
-        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var result = new Models.UserAgent();
 
         var isIpad = RegIPad.IsMatch(headers.UserAgent);
         var isIphone = RegIPhone.IsMatch(headers.UserAgent);
@@ -108,43 +150,43 @@ public static class HttpContextExtension
 
         if (isIpad)
         {
-            result.TryAdd("device", "iPad");
-            result.TryAdd("deviceType", "Tablet");
+            result.Device = "iPad";
+            result.DeviceType = "Tablet";
         }
         else if (isIphone)
         {
-            result.TryAdd("device", "iPhone");
-            result.TryAdd("deviceType", "Mobile");
+            result.Device = "iPhone";
+            result.DeviceType = "Mobile";
         }
         else if (isAndroid && isMobile)
         {
-            result.TryAdd("device", "Android");
-            result.TryAdd("deviceType", "Mobile");
+            result.Device = "Android";
+            result.DeviceType = "Mobile";
         }
         else if (isAndroid)
         {
-            result.TryAdd("device", "Android");
-            result.TryAdd("deviceType", "Tablet");
+            result.Device = "Android";
+            result.DeviceType = "Tablet";
         }
         else if (isWindows && isMobile)
         {
-            result.TryAdd("device", "Windows Phone");
-            result.TryAdd("deviceType", "Mobile");
+            result.Device = "Windows Phone";
+            result.DeviceType = "Mobile";
         }
         else if (isWindows)
         {
-            result.TryAdd("device", "Windows");
-            result.TryAdd("deviceType", "Desktop");
+            result.Device = "Windows";
+            result.DeviceType = "Desktop";
         }
         else if (isLinux)
         {
-            result.TryAdd("device", "Linux");
-            result.TryAdd("deviceType", "Desktop");
+            result.Device = "Linux";
+            result.DeviceType = "Desktop";
         }
         else
         {
-            result.TryAdd("device", "Other");
-            result.TryAdd("deviceType", "Desktop");
+            result.Device = "Other";
+            result.DeviceType = "Desktop";
         }
 
         return result;
