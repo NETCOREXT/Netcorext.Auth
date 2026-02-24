@@ -10,12 +10,18 @@ public class Traffic
     public string Host { get; set; } = null!;
     public string Path { get; set; } = null!;
     public string? QueryString { get; set; }
+    public string? Referer { get; set; }
     public string? Headers { get; set; }
     public string? ResponseHeaders { get; set; }
     public string StatusCode { get; set; } = null!;
     public TimeSpan Elapsed { get; set; }
     public string? DeviceId { get; set; }
     public string? Ip { get; set; }
+    public string? CfConnectingIp { get; set; }
+    public string? XClientIp { get; set; }
+    public string? XOriginForwardedFor { get; set; }
+    public string? XForwardedFor { get; set; }
+    public string? XRealIp { get; set; }
     public string? TraceIdentifier { get; set; }
     public string? XRequestId { get; set; }
     public UserAgent? UserAgent { get; set; }
