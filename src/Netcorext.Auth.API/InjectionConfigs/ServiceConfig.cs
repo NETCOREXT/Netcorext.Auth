@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Netcorext.Auth.API.Services.Blocked.Commands;
 using Netcorext.Auth.API.Services.Blocked.Pipelines;
 using Netcorext.Auth.API.Services.Client.Commands;

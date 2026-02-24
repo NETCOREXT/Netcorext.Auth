@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Netcorext.Auth.Authentication.Settings;
 using Netcorext.Configuration.Extensions;
 

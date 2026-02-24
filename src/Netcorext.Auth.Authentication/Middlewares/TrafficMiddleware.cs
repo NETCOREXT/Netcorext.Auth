@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Netcorext.Auth.Extensions;
 
-
 namespace Netcorext.Auth.Authentication.Middlewares;
 
 public class TrafficMiddleware

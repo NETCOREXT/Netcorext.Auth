@@ -49,6 +49,12 @@ public class AppConfig
         app.UseMiddleware<PermissionMiddleware>();
         app.MapGrpcService<PermissionValidationServiceFacade>();
         app.MapGrpcService<TokenValidationServiceFacade>();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapGrpcReflectionService();
+        }
+
         app.MapReverseProxy();
 
         app.Lifetime.ApplicationStarted.Register(app.WarmupDbContext);
