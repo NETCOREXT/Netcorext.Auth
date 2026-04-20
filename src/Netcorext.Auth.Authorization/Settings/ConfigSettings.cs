@@ -6,6 +6,7 @@ namespace Netcorext.Auth.Authorization.Settings;
 public class ConfigSettings : Config<AppSettings>
 {
     public const string CACHE_TOKEN_RETAIN = "TokenRetain";
+    public const string CACHE_RESOURCE_DISABLED = "ResourceDisabled";
 
     public const string QUEUES_TOKEN_REVOKE_EVENT = "TokenRevokeEvent";
     public const string QUEUES_USER_CHANGE_EVENT = "UserChangeEvent";
@@ -21,6 +22,7 @@ public class AppSettings
     public int SlowCommandLoggingThreshold { get; set; } = 100;
     public int ServiceSlowCommandLoggingThreshold { get; set; } = 150;
     public int HttpSlowCommandLoggingThreshold { get; set; } = 150;
+    public int CacheResourceDisabledExpires { get; set; } = 1000 * 60 * 5;
     public string RequestIdHeaderName { get; set; } = "X-Request-Id";
     public string[] RequestIdFromHeaderNames { get; set; } = { "X-Request-Id" };
     public bool EnableAspNetCoreLogger { get; set; }

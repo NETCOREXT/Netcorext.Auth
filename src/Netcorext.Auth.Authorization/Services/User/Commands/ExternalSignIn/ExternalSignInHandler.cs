@@ -1,5 +1,6 @@
 using FreeRedis;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Netcorext.Algorithms;
 using Netcorext.Auth.Authorization.Models;
@@ -21,6 +22,7 @@ public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<Toke
 {
     private readonly IDispatcher _dispatcher;
     private readonly DatabaseContext _context;
+    private readonly IMemoryCache _cache;
     private readonly RedisClient _redis;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ISnowflake _snowflake;
@@ -28,10 +30,11 @@ public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<Toke
     private readonly ConfigSettings _config;
     private readonly AuthOptions _authOptions;
 
-    public ExternalSignInHandler(IDispatcher dispatcher, DatabaseContextAdapter context, RedisClient redis, IHttpContextAccessor httpContextAccessor, ISnowflake snowflake, JwtGenerator jwtGenerator, IOptions<ConfigSettings> config, IOptions<AuthOptions> authOptions)
+    public ExternalSignInHandler(IDispatcher dispatcher, DatabaseContextAdapter context, IMemoryCache cache, RedisClient redis, IHttpContextAccessor httpContextAccessor, ISnowflake snowflake, JwtGenerator jwtGenerator, IOptions<ConfigSettings> config, IOptions<AuthOptions> authOptions)
     {
         _dispatcher = dispatcher;
         _context = context;
+        _cache = cache;
         _redis = redis;
         _httpContextAccessor = httpContextAccessor;
         _snowflake = snowflake;
@@ -47,6 +50,9 @@ public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<Toke
         var username = request.Username;
         var creationDate = DateTimeOffset.UtcNow;
 
+        if (_cache.Get<bool>(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + request.Username) || _cache.Get<bool>(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + request.UniqueId))
+            return Result<TokenResult>.AccountIsDisabled;
+
         var entity = await dsUser.Include(t => t.Roles)
                                  .ThenInclude(t => t.Role)
                                  .FirstOrDefaultAsync(t => t.NormalizedUsername == username.ToUpper(), cancellationToken);
@@ -60,6 +66,9 @@ public class ExternalSignInHandler : IRequestHandler<ExternalSignIn, Result<Toke
         {
             if (entity.Disabled)
             {
+                _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + entity.Id, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+                _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + entity.NormalizedUsername, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+
                 await SetSignInFailureStateAsync(entity, cancellationToken);
 
                 return Result<TokenResult>.AccountIsDisabled;

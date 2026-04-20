@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FreeRedis;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Netcorext.Algorithms;
 using Netcorext.Auth.Authorization.Models;
@@ -24,6 +25,7 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
 {
     private readonly IDispatcher _dispatcher;
     private readonly DatabaseContext _context;
+    private readonly IMemoryCache _cache;
     private readonly ISnowflake _snowflake;
     private readonly JwtGenerator _jwtGenerator;
     private readonly ISerializer _serializer;
@@ -31,10 +33,11 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
     private readonly ConfigSettings _config;
     private readonly AuthOptions _authOptions;
 
-    public CreateTokenHandler(IDispatcher dispatcher, DatabaseContextAdapter context, ISnowflake snowflake, JwtGenerator jwtGenerator, RedisClient redis, ISerializer serializer, IOptions<AuthOptions> authOptions, IOptions<ConfigSettings> config)
+    public CreateTokenHandler(IDispatcher dispatcher, DatabaseContextAdapter context, IMemoryCache cache, ISnowflake snowflake, JwtGenerator jwtGenerator, RedisClient redis, ISerializer serializer, IOptions<AuthOptions> authOptions, IOptions<ConfigSettings> config)
     {
         _dispatcher = dispatcher;
         _context = context;
+        _cache = cache;
         _snowflake = snowflake;
         _jwtGenerator = jwtGenerator;
         _serializer = serializer;
@@ -74,6 +77,13 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                                               ErrorDescription = Constants.OAuth.INVALID_REQUEST_ID_OR_SECRET_MESSAGE
                                                           });
 
+        if (_cache.Get<bool>(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + clientId))
+            return Result<TokenResult>.AccountIsDisabled.Clone(new TokenResult
+                                                               {
+                                                                   Error = Constants.OAuth.ACCESS_DENIED,
+                                                                   ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
+                                                               });
+
         var dsClient = _context.Set<Domain.Entities.Client>();
 
         var client = await dsClient.Include(t => t.Roles)
@@ -88,11 +98,17 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                                                          });
 
         if (client.Disabled)
+        {
+            _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + client.Id, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+
             return Result<TokenResult>.AccountIsDisabled.Clone(new TokenResult
                                                                {
                                                                    Error = Constants.OAuth.ACCESS_DENIED,
                                                                    ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
                                                                });
+        }
+
+
 
         var secret = request.ClientSecret!.Pbkdf2HashCode(client.CreationDate.ToUnixTimeMilliseconds());
 
@@ -195,12 +211,26 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                                               ErrorDescription = Constants.OAuth.UNAUTHORIZED_CLIENT_MESSAGE
                                                           });
 
+        if (_cache.Get<bool>(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + clientId))
+            return Result<TokenResult>.AccountIsDisabled.Clone(new TokenResult
+                                                               {
+                                                                   Error = Constants.OAuth.ACCESS_DENIED,
+                                                                   ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
+                                                               });
+
         if (request.Username.IsEmpty() || request.Password.IsEmpty())
             return Result<TokenResult>.InvalidInput.Clone(new TokenResult
                                                           {
                                                               Error = Constants.OAuth.INVALID_REQUEST,
                                                               ErrorDescription = Constants.OAuth.INVALID_REQUEST_USERNAME_OR_PASSWORD_MESSAGE
                                                           });
+
+        if (_cache.Get<bool>(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + request.Username!.ToUpper()))
+            return Result<TokenResult>.AccountIsDisabled.Clone(new TokenResult
+                                                               {
+                                                                   Error = Constants.OAuth.ACCESS_DENIED,
+                                                                   ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
+                                                               });
 
         var dsClient = _context.Set<Domain.Entities.Client>();
 
@@ -214,11 +244,15 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                                           });
 
         if (client.Disabled)
-            return Result<TokenResult>.Forbidden.Clone(new TokenResult
-                                                       {
-                                                           Error = Constants.OAuth.ACCESS_DENIED,
-                                                           ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
-                                                       });
+        {
+            _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + client.Id, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+
+            return Result<TokenResult>.AccountIsDisabled.Clone(new TokenResult
+                                                               {
+                                                                   Error = Constants.OAuth.ACCESS_DENIED,
+                                                                   ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
+                                                               });
+        }
 
         var secret = request.ClientSecret!.Pbkdf2HashCode(client.CreationDate.ToUnixTimeMilliseconds());
 
@@ -243,11 +277,16 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                                                                          });
 
         if (user.Disabled)
+        {
+            _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + user.Id, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+            _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + user.NormalizedUsername, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+
             return Result<TokenResult>.AccountIsDisabled.Clone(new TokenResult
                                                                {
                                                                    Error = Constants.OAuth.ACCESS_DENIED,
                                                                    ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
                                                                });
+        }
 
         var password = request.Password!.Pbkdf2HashCode(user.CreationDate.ToUnixTimeMilliseconds());
 
@@ -422,11 +461,15 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
         var client = await dsClient.FirstAsync(t => t.Id == clientId, cancellationToken);
 
         if (client.Disabled)
+        {
+            _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + client.Id, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+
             return Result<TokenResult>.Forbidden.Clone(new TokenResult
                                                        {
                                                            Error = Constants.OAuth.ACCESS_DENIED,
                                                            ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
                                                        });
+        }
 
         var secret = request.ClientSecret!.Pbkdf2HashCode(client.CreationDate.ToUnixTimeMilliseconds());
 
@@ -491,14 +534,21 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
 
         try
         {
-            var (verified, disabled, roles, hasPassword, emailConfirmed, phoneNumberConfirmed, label, allowedRefreshToken, tokenExpireSeconds, refreshTokenExpireSeconds, _) = await GetResourceExpireSecondsAsync(resourceType, resourceId!);
+            var (resourceName, verified, disabled, roles, hasPassword, emailConfirmed, phoneNumberConfirmed, label, allowedRefreshToken, tokenExpireSeconds, refreshTokenExpireSeconds, _) = await GetResourceExpireSecondsAsync(resourceType, resourceId!);
 
             if (disabled)
+            {
+                _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + resourceId, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+                _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + resourceName.ToUpper(), TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+
                 return Result<TokenResult>.Forbidden.Clone(new TokenResult
                                                            {
                                                                Error = Constants.OAuth.ACCESS_DENIED,
                                                                ErrorDescription = Constants.OAuth.ACCESS_DENIED_MESSAGE
                                                            });
+            }
+
+
 
             if (request.Scope == "*")
                 scope = roles.Any() ? roles.Select(t => t.Id.ToString()).Aggregate((c, n) => c + " " + n) : null;
@@ -607,7 +657,7 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
         }
     }
 
-    private async Task<(bool Verified, bool Disabled, Role[] Roles, bool? HasPassword, bool? EmailConfirmed, bool? PhoneNumberConfirmed, string? Label, bool AllowedRefreshToken, int? TokenExpireSeconds, int? RefreshTokenExpireSeconds, int? CodeExpireSeconds)> GetResourceExpireSecondsAsync(ResourceType resourceType, string resourceId)
+    private async Task<(string nameOrId, bool Verified, bool Disabled, Role[] Roles, bool? HasPassword, bool? EmailConfirmed, bool? PhoneNumberConfirmed, string? Label, bool AllowedRefreshToken, int? TokenExpireSeconds, int? RefreshTokenExpireSeconds, int? CodeExpireSeconds)> GetResourceExpireSecondsAsync(ResourceType resourceType, string resourceId)
     {
         return resourceType switch
                {
@@ -617,7 +667,7 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                };
     }
 
-    private async Task<(bool Verified, bool Disabled, Role[] Roles, bool? HasPassword, bool? EmailConfirmed, bool? PhoneNumberConfirmed, string? Label, bool AllowedRefreshToken, int? TokenExpireSeconds, int? RefreshTokenExpireSeconds, int? CodeExpireSeconds)> GetUserExpireSecondsAsync(string resourceId)
+    private async Task<(string username, bool Verified, bool Disabled, Role[] Roles, bool? HasPassword, bool? EmailConfirmed, bool? PhoneNumberConfirmed, string? Label, bool AllowedRefreshToken, int? TokenExpireSeconds, int? RefreshTokenExpireSeconds, int? CodeExpireSeconds)> GetUserExpireSecondsAsync(string resourceId)
     {
         if (resourceId.IsEmpty() || !long.TryParse(resourceId, out var id)) throw new ArgumentException($"Invalid {nameof(resourceId)}.");
 
@@ -647,10 +697,10 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                         ? roles[0].Name
                         : null;
 
-        return (entity.Verified, entity.Disabled, roles, !entity.Password.IsEmpty(), entity.EmailConfirmed, entity.PhoneNumberConfirmed, label, entity.AllowedRefreshToken, entity.TokenExpireSeconds, entity.RefreshTokenExpireSeconds, entity.CodeExpireSeconds);
+        return (entity.Username, entity.Verified, entity.Disabled, roles, !entity.Password.IsEmpty(), entity.EmailConfirmed, entity.PhoneNumberConfirmed, label, entity.AllowedRefreshToken, entity.TokenExpireSeconds, entity.RefreshTokenExpireSeconds, entity.CodeExpireSeconds);
     }
 
-    private async Task<(bool Verified, bool Disabled, Role[] Roles, bool? HasPassword, bool? EmailConfirmed, bool? PhoneNumberConfirmed, string? Label, bool AllowedRefreshToken, int? TokenExpireSeconds, int? RefreshTokenExpireSeconds, int? CodeExpireSeconds)> GetClientExpireSecondsAsync(string resourceId)
+    private async Task<(string id, bool Verified, bool Disabled, Role[] Roles, bool? HasPassword, bool? EmailConfirmed, bool? PhoneNumberConfirmed, string? Label, bool AllowedRefreshToken, int? TokenExpireSeconds, int? RefreshTokenExpireSeconds, int? CodeExpireSeconds)> GetClientExpireSecondsAsync(string resourceId)
     {
         if (resourceId.IsEmpty() || !long.TryParse(resourceId, out var id)) throw new ArgumentException($"Invalid {nameof(resourceId)}.");
 
@@ -680,7 +730,7 @@ public class CreateTokenHandler : IRequestHandler<CreateToken, Result<TokenResul
                         ? roles[0].Name
                         : null;
 
-        return (false, entity.Disabled, roles, null, null, null, label, entity.AllowedRefreshToken, entity.TokenExpireSeconds, entity.RefreshTokenExpireSeconds, entity.CodeExpireSeconds);
+        return (entity.Id.ToString(), false, entity.Disabled, roles, null, null, null, label, entity.AllowedRefreshToken, entity.TokenExpireSeconds, entity.RefreshTokenExpireSeconds, entity.CodeExpireSeconds);
     }
 
     private Task<bool> IsValidAsync(string grantType)

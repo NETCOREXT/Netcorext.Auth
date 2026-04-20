@@ -5,6 +5,7 @@ using Netcorext.Auth.Authorization.Settings;
 using Netcorext.EntityFramework.UserIdentityPattern.AspNetCore;
 using Netcorext.Extensions.Redis.Utilities;
 using Netcorext.Serialization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Netcorext.Auth.Authorization.InjectionConfigs;
 
@@ -65,5 +66,11 @@ public class DbConfig
                                                                                                           DeserializeRaw = serializer.Deserialize
                                                                                                       }).Client;
                                               });
+
+        services.AddSingleton<MemoryCacheEntryOptions>(_ => new MemoryCacheEntryOptions
+                                                            {
+                                                                Priority = CacheItemPriority.NeverRemove
+                                                            });
+        services.AddMemoryCache();
     }
 }

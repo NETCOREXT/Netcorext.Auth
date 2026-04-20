@@ -1,5 +1,6 @@
 using FreeRedis;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Netcorext.Algorithms;
 using Netcorext.Auth.Authorization.Models;
@@ -21,6 +22,7 @@ public class SignInHandler : IRequestHandler<SignIn, Result<TokenResult>>
 {
     private readonly IDispatcher _dispatcher;
     private readonly DatabaseContext _context;
+    private readonly IMemoryCache _cache;
     private readonly RedisClient _redis;
     private readonly ISnowflake _snowflake;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -28,10 +30,11 @@ public class SignInHandler : IRequestHandler<SignIn, Result<TokenResult>>
     private readonly ConfigSettings _config;
     private readonly AuthOptions _authOptions;
 
-    public SignInHandler(IDispatcher dispatcher, DatabaseContextAdapter context, RedisClient redis, ISnowflake snowflake, IHttpContextAccessor httpContextAccessor, JwtGenerator jwtGenerator, IOptions<ConfigSettings> config, IOptions<AuthOptions> autoOptions)
+    public SignInHandler(IDispatcher dispatcher, DatabaseContextAdapter context, IMemoryCache cache, RedisClient redis, ISnowflake snowflake, IHttpContextAccessor httpContextAccessor, JwtGenerator jwtGenerator, IOptions<ConfigSettings> config, IOptions<AuthOptions> autoOptions)
     {
         _dispatcher = dispatcher;
         _context = context;
+        _cache = cache;
         _redis = redis;
         _snowflake = snowflake;
         _httpContextAccessor = httpContextAccessor;
@@ -43,6 +46,9 @@ public class SignInHandler : IRequestHandler<SignIn, Result<TokenResult>>
     public async Task<Result<TokenResult>> Handle(SignIn request, CancellationToken cancellationToken = default)
     {
         var ds = _context.Set<Domain.Entities.User>();
+
+        if (_cache.Get<bool>(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + request.Username.ToUpper()))
+            return Result<TokenResult>.AccountIsDisabled;
 
         var entity = await ds.Include(t => t.Roles)
                              .ThenInclude(t => t.Role)
@@ -56,6 +62,9 @@ public class SignInHandler : IRequestHandler<SignIn, Result<TokenResult>>
 
         if (entity.Disabled)
         {
+            _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + entity.Id, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+            _cache.Set(ConfigSettings.CACHE_RESOURCE_DISABLED + ":" + entity.NormalizedUsername, true, TimeSpan.FromMilliseconds(_config.AppSettings.CacheResourceDisabledExpires));
+
             await SetSignInFailureStateAsync(entity, cancellationToken);
 
             return Result<TokenResult>.AccountIsDisabled;
